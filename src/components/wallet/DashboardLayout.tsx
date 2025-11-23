@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Wallet, Settings, Menu, X, LogOut, PieChart, ArrowRightLeft } from "lucide-react";
 import { useWalletStore } from "@/stores/useWalletStore";
 import { useRouter, usePathname } from "next/navigation";
+import { ACTIVE_CHAIN } from "@/lib/chain";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -127,7 +128,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="flex items-center gap-4">
             <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-teal-500/10 border border-teal-500/20 shadow-[0_0_10px_rgba(20,184,166,0.1)]">
               <div className="w-2 h-2 rounded-full bg-teal-500 animate-pulse" />
-              <span className="text-xs font-medium text-teal-400">Plasma Mainnet</span>
+              <span className="text-xs font-medium text-teal-400">{ACTIVE_CHAIN.displayName}</span>
             </div>
           </div>
         </header>
