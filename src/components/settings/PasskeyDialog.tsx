@@ -4,35 +4,32 @@ import { CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ChevronRight, Plus, Trash2, Fingerprint, Lock } from "lucide-react";
+import { ChevronRight, Plus, Trash2, Fingerprint, Lock, Star, Edit2, Check, X } from "lucide-react";
 import { toast } from "sonner";
-import db from "@/lib/storage/db";
+import db, { PasskeyMetadata } from "@/lib/storage/db";
 import { useLiveQuery } from "dexie-react-hooks";
-import { registerPasskey, authenticatePasskey } from "@/lib/passkey";
-import { decryptData } from "@/lib/crypto";
+import { authenticatePasskey } from "@/lib/passkey";
+import { decryptData, type EncryptedData } from "@/lib/crypto";
 import { useWalletStore } from "@/stores/useWalletStore";
-
-interface RegisteredPasskey {
-  id: string;
-  name: string;
-  createdAt: number;
-}
+import { usePasskeyManager } from "@/hooks/usePasskeyManager";
+import { usePasskeyEditor } from "@/hooks/usePasskeyEditor";
 
 export function PasskeyDialog() {
   const sessionPassword = useWalletStore((state) => state.sessionPassword);
   
   const [isOpen, setIsOpen] = useState(false);
   const [newPasskeyName, setNewPasskeyName] = useState("");
-  const [isProcessingPasskey, setIsProcessingPasskey] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [authPassword, setAuthPassword] = useState("");
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [showPasswordInput, setShowPasswordInput] = useState(false);
+  
+  const passkeyManager = usePasskeyManager();
+  const passkeyEditor = usePasskeyEditor();
 
-  // Fetch Passkeys
   const passkeys = useLiveQuery(async () => {
     const setting = await db.settings.get({ key: 'passkeys_metadata' });
-    return (setting?.value as RegisteredPasskey[]) || [];
+    return (setting?.value as PasskeyMetadata[]) || [];
   });
 
   const resetDialog = () => {
@@ -41,6 +38,7 @@ export function PasskeyDialog() {
     setAuthPassword("");
     setNewPasskeyName("");
     setShowPasswordInput(false);
+    passkeyEditor.resetEditing();
   };
 
   const handleAuth = async (usePassword: boolean = false) => {
@@ -48,19 +46,41 @@ export function PasskeyDialog() {
       // Passkey verification path
       setIsAuthenticating(true);
       try {
-        await authenticatePasskey();
+        // Try default Passkey first
+        const defaultPasskey = passkeys?.find(pk => pk.isDefault);
+        let result;
+        try {
+          result = await authenticatePasskey(defaultPasskey?.credentialId);
+        } catch (defaultError) {
+          // If default fails, let user choose
+          if (defaultPasskey) {
+            toast.info("預設 Passkey 無法使用，請選擇其他 Passkey");
+            result = await authenticatePasskey();
+          } else {
+            throw defaultError;
+          }
+        }
         
-        // If no session password, we still need to prompt for password to unlock features
-        if (!sessionPassword) {
-          toast.error("需要密碼才能解密密鑰 (請先使用密碼登入一次)");
-          setShowPasswordInput(true);
-          return;
+        // Update last used timestamp
+        if (result.credentialId && passkeys) {
+          const updatedPasskeys = passkeys.map(pk => 
+            pk.credentialId === result.credentialId 
+              ? { ...pk, lastUsed: Date.now() } 
+              : pk
+          );
+          const existingSetting = await db.settings.get({ key: 'passkeys_metadata' });
+          await db.settings.put({
+            id: existingSetting?.id,
+            key: 'passkeys_metadata',
+            value: updatedPasskeys
+          });
         }
         
         setIsUnlocked(true);
         toast.success("驗證成功");
-      } catch (error) {
-        toast.error("Passkey 驗證失敗");
+      } catch {
+        toast.error("Passkey 驗證失敗，請使用密碼驗證");
+        setShowPasswordInput(true);
       } finally {
         setIsAuthenticating(false);
       }
@@ -77,11 +97,11 @@ export function PasskeyDialog() {
         if (!setting) throw new Error("No key found");
         
         // Try to decrypt to verify password
-        await decryptData(setting.value, authPassword);
+        await decryptData(setting.value as EncryptedData, authPassword);
         setIsUnlocked(true);
         setAuthPassword("");
         toast.success("密碼驗證成功");
-      } catch (error) {
+      } catch {
         toast.error("密碼錯誤");
       } finally {
         setIsAuthenticating(false);
@@ -95,55 +115,25 @@ export function PasskeyDialog() {
       return;
     }
 
-    setIsProcessingPasskey(true);
-    try {
-      await registerPasskey(newPasskeyName);
-      
-      const newPasskey: RegisteredPasskey = {
-        id: crypto.randomUUID(),
-        name: newPasskeyName,
-        createdAt: Date.now(),
-      };
-      
-      const currentPasskeys = passkeys || [];
-      
-      // Get existing setting to preserve ID
-      const existingSetting = await db.settings.get({ key: 'passkeys_metadata' });
-      
-      await db.settings.put({
-        id: existingSetting?.id, // Include ID if it exists to update instead of insert
-        key: 'passkeys_metadata',
-        value: [...currentPasskeys, newPasskey]
-      });
-
+    const newPasskey = await passkeyManager.addPasskey(newPasskeyName);
+    if (newPasskey) {
       setNewPasskeyName("");
-      toast.success(`Passkey "${newPasskey.name}" 新增成功`);
-    } catch (error) {
-      console.error(error);
-      toast.error("Passkey 註冊失敗或取消");
-    } finally {
-      setIsProcessingPasskey(false);
     }
   };
 
   const handleRemovePasskey = async (id: string) => {
-    if (!passkeys) return;
-    if (passkeys.length <= 1) {
-      toast.error("至少需要保留一個 Passkey");
-      return;
+    await passkeyManager.removePasskey(id);
+  };
+
+  const handleSetDefault = async (id: string) => {
+    await passkeyManager.setDefaultPasskey(id);
+  };
+
+  const savePasskeyName = async (id: string) => {
+    const success = await passkeyManager.updatePasskeyName(id, passkeyEditor.editingName);
+    if (success) {
+      passkeyEditor.resetEditing();
     }
-
-    const updatedPasskeys = passkeys.filter(p => p.id !== id);
-    
-    // Get existing setting to preserve ID
-    const existingSetting = await db.settings.get({ key: 'passkeys_metadata' });
-
-    await db.settings.put({
-      id: existingSetting?.id,
-      key: 'passkeys_metadata',
-      value: updatedPasskeys
-    });
-    toast.success("Passkey 已移除");
   };
 
   return (
@@ -260,21 +250,93 @@ export function PasskeyDialog() {
             <div className="space-y-2">
               {passkeys?.map((pk) => (
                 <div key={pk.id} className="flex items-center justify-between bg-keylio-bg-primary p-3 rounded border border-keylio-border-primary">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-1">
                     <Fingerprint className="w-4 h-4 text-teal-500" />
-                    <div>
-                      <div className="text-sm font-medium">{pk.name}</div>
-                      <div className="text-xs text-keylio-text-muted">{new Date(pk.createdAt).toLocaleDateString()}</div>
+                    <div className="flex-1">
+                      {passkeyEditor.editingPasskeyId === pk.id ? (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            ref={passkeyEditor.editInputRef}
+                            value={passkeyEditor.editingName}
+                            onChange={(e) => passkeyEditor.setEditingName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') savePasskeyName(pk.id);
+                              if (e.key === 'Escape') passkeyEditor.cancelEditing();
+                            }}
+                            className="h-8 text-sm bg-keylio-bg-secondary border-keylio-border-primary"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => savePasskeyName(pk.id)}
+                            className="h-8 w-8 text-green-500 hover:text-green-400 hover:bg-green-500/10"
+                          >
+                            <Check size={16} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={passkeyEditor.cancelEditing}
+                            className="h-8 w-8 text-keylio-text-muted hover:text-keylio-text-primary hover:bg-keylio-bg-tertiary"
+                          >
+                            <X size={16} />
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="text-sm font-medium flex items-center gap-2">
+                            {pk.name}
+                            {pk.isDefault && (
+                              <span className="text-xs bg-teal-500/20 text-teal-400 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <Star className="w-3 h-3 fill-current" />
+                                預設
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-keylio-text-muted">
+                            {new Date(pk.createdAt).toLocaleDateString()}
+                            {pk.lastUsed && ` • 上次使用: ${new Date(pk.lastUsed).toLocaleDateString()}`}
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleRemovePasskey(pk.id)}
-                    className="text-keylio-text-muted hover:text-red-500 hover:bg-red-500/10"
-                  >
-                    <Trash2 size={16} />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    {passkeyEditor.editingPasskeyId !== pk.id && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => passkeyEditor.startEditing(pk)}
+                          className="text-keylio-text-muted hover:text-blue-500 hover:bg-blue-500/10"
+                          title="編輯名稱"
+                        >
+                          <Edit2 size={16} />
+                        </Button>
+                        {!pk.isDefault && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleSetDefault(pk.id)}
+                            className="text-keylio-text-muted hover:text-teal-500 hover:bg-teal-500/10"
+                            title="設為預設"
+                          >
+                            <Star size={16} />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemovePasskey(pk.id)}
+                          disabled={pk.isDefault}
+                          className="text-keylio-text-muted hover:text-red-500 hover:bg-red-500/10 disabled:opacity-30 disabled:cursor-not-allowed"
+                          title={pk.isDefault ? "預設 Passkey 無法刪除" : "刪除此 Passkey"}
+                        >
+                          <Trash2 size={16} />
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -284,14 +346,21 @@ export function PasskeyDialog() {
                 placeholder="新 Passkey 名稱 (例如: iPad)"
                 value={newPasskeyName}
                 onChange={(e) => setNewPasskeyName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newPasskeyName.trim() && !passkeyManager.isProcessing) {
+                    handleAddPasskey();
+                  }
+                }}
+                disabled={passkeyManager.isProcessing}
                 className="bg-keylio-bg-primary border-keylio-border-primary focus:border-keylio-teal"
               />
               <Button 
                 onClick={handleAddPasskey}
-                disabled={isProcessingPasskey || !newPasskeyName.trim()}
-                className="bg-teal-600 hover:bg-teal-700 shrink-0"
+                disabled={passkeyManager.isProcessing || !newPasskeyName.trim()}
+                className="bg-teal-600 hover:bg-teal-700 shrink-0 disabled:opacity-50"
+                title={passkeyManager.isProcessing ? "儲存中..." : "新增 Passkey"}
               >
-                {isProcessingPasskey ? "..." : <Plus className="w-4 h-4" />}
+                {passkeyManager.isProcessing ? "儲存中..." : <Plus className="w-4 h-4" />}
               </Button>
             </div>
           </div>

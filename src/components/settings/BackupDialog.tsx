@@ -8,7 +8,7 @@ import { ChevronRight, Copy, CheckCircle, Lock, AlertTriangle, Fingerprint } fro
 import { toast } from "sonner";
 import db from "@/lib/storage/db";
 import { authenticatePasskey } from "@/lib/passkey";
-import { decryptData } from "@/lib/crypto";
+import { decryptData, type EncryptedData } from "@/lib/crypto";
 import { useWalletStore } from "@/stores/useWalletStore";
 
 export function BackupDialog() {
@@ -41,11 +41,11 @@ export function BackupDialog() {
       const setting = await db.settings.get({ key: 'encrypted_mnemonic' });
       if (!setting) throw new Error("No mnemonic found");
 
-      const decrypted = await decryptData(setting.value, pwdToUse);
+      const decrypted = await decryptData(setting.value as EncryptedData, pwdToUse);
       setMnemonic(decrypted);
       setIsRevealed(true);
       return true;
-    } catch (error) {
+    } catch {
       toast.error("密碼錯誤");
       return false;
     }
@@ -68,7 +68,7 @@ export function BackupDialog() {
         if (success) {
           toast.success("驗證成功");
         }
-      } catch (error) {
+      } catch {
         toast.error("Passkey 驗證失敗");
       }
     } else {
