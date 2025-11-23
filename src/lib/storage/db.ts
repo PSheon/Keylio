@@ -42,6 +42,7 @@ export interface Transaction {
   timestamp: number;
   note?: string; // Transaction note
   label?: string; // Category label (Food, Transport, etc.)
+  subWalletId?: number; // Reference to sub_wallets.id
 }
 
 // Contact (address book)
@@ -171,6 +172,20 @@ db.version(3).stores({
   settings: "++id, &key",
   sub_wallets: "++id, address, index",
   transactions: "++id, hash, from, to, timestamp, token, label",
+  contacts: "++id, &address, name, lastUsed",
+  user_preferences: "++id",
+  networks: "++id, chainId, isActive, isCustom",
+  tokens: "++id, [chainId+contractAddress], symbol, isActive",
+  transaction_categories: "++id, name, usageCount",
+  contact_tags: "++id, name",
+  backup_metadata: "++id, type, lastBackupAt",
+});
+
+// Version 4: Add subWalletId index to transactions for filtering
+db.version(4).stores({
+  settings: "++id, &key",
+  sub_wallets: "++id, address, index",
+  transactions: "++id, hash, from, to, timestamp, token, label, subWalletId",
   contacts: "++id, &address, name, lastUsed",
   user_preferences: "++id",
   networks: "++id, chainId, isActive, isCustom",
