@@ -23,7 +23,7 @@ export const deriveWallet = (mnemonic: string, index: number = 0): ethers.HDNode
 
 // --- Encryption & Decryption (AES-256-GCM) ---
 
-interface EncryptedData {
+export interface EncryptedData {
   ciphertext: string; // Base64 encoded
   iv: string;         // Base64 encoded
   salt: string;       // Base64 encoded
@@ -124,7 +124,7 @@ export const decryptData = async (encryptedData: EncryptedData, password: string
       ciphertext
     );
     return dec.decode(decryptedContent);
-  } catch (e) {
+  } catch {
     throw new Error("Decryption failed. Wrong password?");
   }
 };
