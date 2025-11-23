@@ -1,256 +1,236 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { ArrowUpRight, ArrowDownRight, TrendingUp } from "lucide-react";
+import { useState, useMemo, memo } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 import { useWalletStore } from "@/stores/useWalletStore";
-import { useMemo } from "react";
 import { getAllTokens, formatTokenAmount, formatUSD, getTokenValueUSD } from "@/lib/tokens";
 import { useMultiTokenBalance } from "@/hooks/useTokenBalance";
-
-// Generate mock trend data for demonstration
-const generate7DayTrend = (currentValue: number) => {
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  return days.map((name, i) => ({
-    name,
-    value: currentValue * (0.9 + Math.random() * 0.2), // ±10% variation
-  }));
-};
+import { toast } from "sonner";
+import { motion } from "framer-motion";
+import { fadeInUp, staggerContainer, staggerItem } from "@/lib/animations";
 
 export function AssetOverview() {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+  
   const wallets = useWalletStore((state) => state.wallets);
   const activeWalletId = useWalletStore((state) => state.activeWalletId);
   
   // Get active wallet
   const activeWallet = wallets.find(w => w.id === activeWalletId);
   
-  // Get all tokens
+  // Get stablecoins only (USDT, USDC)
   const allTokens = useMemo(() => getAllTokens(), []);
-  const tokenAddresses = useMemo(() => allTokens.map(t => t.address), [allTokens]);
+  const stablecoins = useMemo(() => 
+    allTokens.filter(t => t.symbol === 'USDT' || t.symbol === 'USDC'),
+    [allTokens]
+  );
+  const tokenAddresses = useMemo(() => stablecoins.map(t => t.address), [stablecoins]);
   
-  // Fetch balances for all tokens
-  const { data: balances, isLoading, error } = useMultiTokenBalance(
+  // Fetch balances for stablecoins
+  const { data: balances, isLoading, error, refetch } = useMultiTokenBalance(
     tokenAddresses,
     activeWallet?.address
   );
   
-  // Calculate portfolio breakdown
-  const { tokenBalances, totalValueUSD, allocationData, trendData } = useMemo(() => {
-    const tokenBalances: Array<{
-      symbol: string;
-      name: string;
-      balance: string;
-      valueUSD: number;
-      color: string;
-      icon: string;
-    }> = [];
-    
-    let totalValueUSD = 0;
+  // Calculate stablecoin balances
+  const { usdtBalance, usdcBalance, totalStablecoinUSD, otherTokens } = useMemo(() => {
+    let usdtBalance = 0;
+    let usdcBalance = 0;
+    let totalStablecoinUSD = 0;
     
     if (balances) {
-      allTokens.forEach((token) => {
+      stablecoins.forEach((token) => {
         const balance = balances[token.address];
         if (!balance) return;
         
         const formattedBalance = formatTokenAmount(balance, token.decimals);
         const valueUSD = getTokenValueUSD(formattedBalance, token.symbol);
         
-        // Only show tokens with non-zero balance
-        if (parseFloat(formattedBalance) > 0.0001) {
-          tokenBalances.push({
-            symbol: token.symbol,
-            name: token.name,
-            balance: formattedBalance,
-            valueUSD,
-            color: token.color,
-            icon: token.icon,
-          });
-          
-          totalValueUSD += valueUSD;
+        if (token.symbol === 'USDT') {
+          usdtBalance = valueUSD;
+        } else if (token.symbol === 'USDC') {
+          usdcBalance = valueUSD;
         }
+        
+        totalStablecoinUSD += valueUSD;
       });
     }
     
-    // Sort by value descending
-    tokenBalances.sort((a, b) => b.valueUSD - a.valueUSD);
-    
-    // Create allocation data for pie chart
-    const allocationData = tokenBalances.map(tb => ({
-      name: tb.symbol,
-      value: tb.valueUSD,
-      color: tb.color,
-    }));
-    
-    const trendData = generate7DayTrend(totalValueUSD);
+    // Get other tokens for detail view
+    const otherTokens = allTokens
+      .filter(t => t.symbol !== 'USDT' && t.symbol !== 'USDC')
+      .map(token => {
+        const balance = balances?.[token.address];
+        if (!balance) return null;
+        
+        const formattedBalance = formatTokenAmount(balance, token.decimals);
+        const valueUSD = getTokenValueUSD(formattedBalance, token.symbol);
+        
+        if (parseFloat(formattedBalance) <= 0.0001) return null;
+        
+        return {
+          symbol: token.symbol,
+          name: token.name,
+          balance: formattedBalance,
+          valueUSD,
+          icon: token.icon,
+        };
+      })
+      .filter(Boolean) as Array<{
+        symbol: string;
+        name: string;
+        balance: string;
+        valueUSD: number;
+        icon: string;
+      }>;
     
     return {
-      tokenBalances,
-      totalValueUSD,
-      allocationData,
-      trendData,
+      usdtBalance,
+      usdcBalance,
+      totalStablecoinUSD,
+      otherTokens,
     };
-  }, [balances, allTokens]);
+  }, [balances, stablecoins, allTokens]);
   
-  // Calculate 24h change (mock)
-  const change24h = useMemo(() => {
-    if (trendData.length < 2) return 0;
-    const today = trendData[trendData.length - 1].value;
-    const yesterday = trendData[trendData.length - 2].value;
-    return ((today - yesterday) / yesterday) * 100;
-  }, [trendData]);
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await refetch();
+      toast.success("餘額已更新");
+    } catch (error) {
+      toast.error("更新失敗");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   return (
-    <div className="grid lg:grid-cols-3 gap-6">
-      {/* Total Portfolio Value & Trend */}
-      <Card className="lg:col-span-2 bg-keylio-bg-secondary border-keylio-border-primary text-keylio-text-primary overflow-hidden">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-keylio-text-secondary">總資產估值</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-baseline gap-4 mb-6">
-            {isLoading ? (
-              <div className="h-10 w-48 bg-keylio-bg-tertiary animate-pulse rounded" />
-            ) : error ? (
-              <h2 className="text-2xl font-bold text-red-400">連接失敗</h2>
-            ) : (
-              <>
-                <h2 className="text-4xl font-bold">{formatUSD(totalValueUSD)}</h2>
-                <div className={`flex items-center gap-1 text-sm font-medium px-2 py-0.5 rounded ${
-                  change24h >= 0 
-                    ? 'text-green-400 bg-green-400/10' 
-                    : 'text-red-400 bg-red-400/10'
-                }`}>
-                  {change24h >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-                  <span>{change24h >= 0 ? '+' : ''}{change24h.toFixed(2)}% (24h)</span>
-                </div>
-              </>
-            )}
+    <motion.div 
+      className="space-y-6"
+      variants={staggerContainer}
+      initial="initial"
+      animate="animate"
+    >
+      {/* Main Balance - 80% Above the Fold */}
+      <motion.div variants={fadeInUp}>
+        <Card className="bg-linear-to-br from-keylio-bg-secondary to-keylio-bg-tertiary border-keylio-border-primary text-keylio-text-primary overflow-hidden relative">
+          {/* Decorative gradient */}
+          <div className="absolute inset-0 bg-linear-to-br from-teal-500/5 to-transparent pointer-events-none" />
+        
+        <CardContent className="pt-8 pb-6 relative">
+          <div className="flex items-start justify-between mb-2">
+            <div className="text-sm font-medium text-keylio-text-secondary">
+              穩定幣總餘額
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="min-h-11 min-w-11 h-11 w-11 p-0 hover:bg-keylio-bg-tertiary touch-manipulation active:scale-95 transition-transform"
+            >
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </Button>
           </div>
-
-          <div className="h-[250px] w-full" style={{ minHeight: '250px' }}>
-            <ResponsiveContainer width="100%" height="100%" minHeight={250}>
-              <AreaChart data={trendData}>
-                <defs>
-                  <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#14b8a6" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#14b8a6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--keylio-border-primary)" vertical={false} />
-                <XAxis 
-                  dataKey="name" 
-                  stroke="var(--keylio-text-secondary)" 
-                  fontSize={12} 
-                  tickLine={false} 
-                  axisLine={false} 
-                />
-                <YAxis 
-                  stroke="var(--keylio-text-secondary)" 
-                  fontSize={12} 
-                  tickLine={false} 
-                  axisLine={false} 
-                  tickFormatter={(value) => `$${value.toFixed(0)}`}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'var(--keylio-bg-primary)', 
-                    borderColor: 'var(--keylio-border-primary)', 
-                    borderRadius: '8px',
-                    color: 'var(--keylio-text-primary)'
-                  }}
-                  itemStyle={{ color: '#14b8a6' }}
-                  formatter={(value: number) => [`$${value.toFixed(2)}`, '價值']}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="value" 
-                  stroke="#14b8a6" 
-                  strokeWidth={2}
-                  fillOpacity={1} 
-                  fill="url(#colorValue)" 
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Asset Allocation */}
-      <Card className="bg-keylio-bg-secondary border-keylio-border-primary text-keylio-text-primary">
-        <CardHeader>
-          <CardTitle className="text-sm font-medium text-keylio-text-secondary">資產分佈</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {tokenBalances.length > 0 ? (
+          
+          {isLoading ? (
+            <Skeleton className="h-16 w-64 bg-keylio-bg-tertiary mb-4" />
+          ) : error ? (
+            <div className="text-red-400 text-2xl font-bold mb-4">連接失敗</div>
+          ) : (
             <>
-              <div className="h-[200px] w-full relative" style={{ minHeight: '200px' }}>
-                <ResponsiveContainer width="100%" height="100%" minHeight={200}>
-                  <PieChart>
-                    <Pie
-                      data={allocationData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      dataKey="value"
-                      stroke="none"
-                    >
-                      {allocationData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'var(--keylio-bg-primary)', 
-                        borderColor: 'var(--keylio-border-primary)', 
-                        borderRadius: '8px',
-                        color: 'var(--keylio-text-primary)'
-                      }}
-                      formatter={(value: number) => formatUSD(value)}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-                {/* Center Text */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="text-center">
-                    <div className="text-xs text-keylio-text-secondary">資產</div>
-                    <div className="text-xl font-bold">{tokenBalances.length}</div>
-                  </div>
-                </div>
+              {/* Main Balance - Extra Large */}
+              <div className="mb-6">
+                <h2 className="text-5xl md:text-6xl font-bold bg-clip-text text-transparent bg-linear-to-r from-teal-400 to-teal-300">
+                  {formatUSD(totalStablecoinUSD)}
+                </h2>
+                <p className="text-sm text-keylio-text-secondary mt-2">
+                  USDT + USDC 合計
+                </p>
               </div>
 
-              <div className="mt-6 space-y-3">
-                {tokenBalances.map((token) => (
-                  <div key={token.symbol} className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-xl" style={{ backgroundColor: token.color + '20' }}>
-                        {token.icon}
-                      </div>
-                      <div>
-                        <div className="font-medium text-keylio-text-primary">{token.symbol}</div>
-                        <div className="text-xs text-keylio-text-muted">{parseFloat(token.balance).toFixed(4)}</div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-medium">{formatUSD(token.valueUSD)}</div>
-                      <div className="text-xs text-keylio-text-muted">
-                        {((token.valueUSD / totalValueUSD) * 100).toFixed(1)}%
-                      </div>
-                    </div>
+              {/* Stablecoin Breakdown */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-keylio-bg-primary/50 rounded-xl p-4 border border-keylio-border-primary/50">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl">💵</span>
+                    <span className="font-semibold text-keylio-text-primary">USDT</span>
                   </div>
-                ))}
+                  <p className="text-2xl font-bold text-keylio-text-primary">
+                    {formatUSD(usdtBalance)}
+                  </p>
+                </div>
+                
+                <div className="bg-keylio-bg-primary/50 rounded-xl p-4 border border-keylio-border-primary/50">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl">💎</span>
+                    <span className="font-semibold text-keylio-text-primary">USDC</span>
+                  </div>
+                  <p className="text-2xl font-bold text-keylio-text-primary">
+                    {formatUSD(usdcBalance)}
+                  </p>
+                </div>
               </div>
             </>
-          ) : (
-            <div className="text-center py-12 text-keylio-text-secondary">
-              <TrendingUp className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p className="text-sm">尚無資產</p>
-              <p className="text-xs mt-1">領取測試代幣以開始使用</p>
-            </div>
           )}
         </CardContent>
       </Card>
-    </div>
+      </motion.div>
+
+      {/* Other Assets - Collapsible (20% Below the Fold) */}
+      {otherTokens.length > 0 && (
+        <motion.div variants={fadeInUp}>
+          <Card className="bg-keylio-bg-secondary border-keylio-border-primary text-keylio-text-primary">
+          <button
+            onClick={() => setShowDetails(!showDetails)}
+            className="w-full min-h-11 px-6 py-4 flex items-center justify-between hover:bg-keylio-bg-tertiary/50 active:bg-keylio-bg-tertiary transition-colors touch-manipulation"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-keylio-text-secondary">
+                其他資產
+              </span>
+              <span className="text-xs text-keylio-text-muted bg-keylio-bg-tertiary px-2 py-0.5 rounded-full">
+                {otherTokens.length}
+              </span>
+            </div>
+            {showDetails ? (
+              <ChevronUp className="w-4 h-4 text-keylio-text-secondary" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-keylio-text-secondary" />
+            )}
+          </button>
+          
+          {showDetails && (
+            <CardContent className="pt-0 pb-4 space-y-3">
+              {otherTokens.map((token) => (
+                <motion.div 
+                  key={token.symbol} 
+                  variants={staggerItem}
+                  className="flex items-center justify-between text-sm py-2 border-t border-keylio-border-primary/50 first:border-t-0"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{token.icon}</span>
+                    <div>
+                      <div className="font-medium text-keylio-text-primary">{token.symbol}</div>
+                      <div className="text-xs text-keylio-text-muted">{parseFloat(token.balance).toFixed(4)}</div>
+                    </div>
+                  </div>
+                  <div className="text-right font-medium">
+                    {formatUSD(token.valueUSD)}
+                  </div>
+                </motion.div>
+              ))}
+            </CardContent>
+          )}
+        </Card>
+        </motion.div>
+      )}
+    </motion.div>
   );
 }
+
+export default memo(AssetOverview);
