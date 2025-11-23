@@ -1,13 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Search, User, Clock, Plus } from "lucide-react";
+import { Search, User, Clock, Plus, TrendingUp, UserPlus } from "lucide-react";
 import db, { type Contact } from "@/lib/storage/db";
 import { useLiveQuery } from "dexie-react-hooks";
 import { ethers } from "ethers";
+import { useWalletStore } from "@/stores/useWalletStore";
 
 interface ContactPickerProps {
   onSelect: (address: string, name?: string) => void;
@@ -21,11 +22,52 @@ export function ContactPicker({ onSelect, currentAddress }: ContactPickerProps) 
   const [newContactAddress, setNewContactAddress] = useState("");
   const [newContactEmoji, setNewContactEmoji] = useState("👤");
 
+  const wallets = useWalletStore((state) => state.wallets);
+  const activeWalletId = useWalletStore((state) => state.activeWalletId);
+  const activeWallet = wallets.find(w => w.id === activeWalletId);
+
   // Fetch all contacts
   const contacts = useLiveQuery(
     () => db.contacts.orderBy("lastUsed").reverse().toArray(),
     []
   );
+
+  // Fetch recent transactions to suggest frequent addresses
+  const recentTransactions = useLiveQuery(
+    () => {
+      if (!activeWallet?.id) return [];
+      return db.transactions
+        .where('subWalletId')
+        .equals(activeWallet.id)
+        .reverse()
+        .limit(50)
+        .toArray();
+    },
+    [activeWallet?.id]
+  );
+
+  // Calculate frequent addresses from transactions (not in contacts)
+  const suggestedAddresses = useMemo(() => {
+    if (!recentTransactions || !contacts || !activeWallet) return [];
+    
+    const addressCount = new Map<string, number>();
+    const contactAddresses = new Set(contacts.map(c => c.address.toLowerCase()));
+    
+    recentTransactions.forEach(tx => {
+      const otherAddress = tx.to.toLowerCase() === activeWallet.address.toLowerCase() 
+        ? tx.from.toLowerCase()
+        : tx.to.toLowerCase();
+      
+      if (!contactAddresses.has(otherAddress) && otherAddress !== activeWallet.address.toLowerCase()) {
+        addressCount.set(otherAddress, (addressCount.get(otherAddress) || 0) + 1);
+      }
+    });
+    
+    return Array.from(addressCount.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([address, count]) => ({ address, count }));
+  }, [recentTransactions, contacts, activeWallet]);
 
   // Filter contacts by search term
   const filteredContacts = contacts?.filter(
@@ -115,6 +157,52 @@ export function ContactPicker({ onSelect, currentAddress }: ContactPickerProps) 
                   </div>
                 </div>
               </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Suggested Addresses (Frequent but not in contacts) */}
+      {!searchTerm && suggestedAddresses.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 text-xs text-keylio-text-secondary">
+            <TrendingUp className="w-3 h-3" />
+            <span>常用地址（建議加入聯絡人）</span>
+          </div>
+          <div className="space-y-1">
+            {suggestedAddresses.map(({ address, count }) => (
+              <div
+                key={address}
+                className="flex items-center gap-2 p-3 rounded-lg bg-keylio-bg-primary border border-keylio-border-primary"
+              >
+                <button
+                  onClick={() => onSelect(address)}
+                  className="flex-1 flex items-center gap-3 text-left hover:opacity-80 transition-opacity"
+                >
+                  <div className="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center text-lg">
+                    👤
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs text-keylio-text-muted font-mono truncate">
+                      {address}
+                    </div>
+                    <div className="text-xs text-orange-400">
+                      {count} 筆交易
+                    </div>
+                  </div>
+                </button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setNewContactAddress(address);
+                    setShowAddForm(true);
+                  }}
+                  className="shrink-0 h-7 px-2 border-keylio-border-primary hover:bg-keylio-teal/10 hover:border-keylio-teal"
+                >
+                  <UserPlus className="w-3 h-3" />
+                </Button>
+              </div>
             ))}
           </div>
         </div>

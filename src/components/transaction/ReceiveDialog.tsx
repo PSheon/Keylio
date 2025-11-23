@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy, Check, QrCode } from "lucide-react";
+import { Copy, Check, QrCode, Share2, Mail, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import QRCodeLib from "qrcode";
 
@@ -74,6 +74,31 @@ export function ReceiveDialog({ address, trigger }: ReceiveDialogProps) {
     toast.success("付款連結已複製");
   };
 
+  const handleShare = async (platform: 'whatsapp' | 'email' | 'native') => {
+    const shareText = `請付款至我的錢包地址:\n${address}`;
+    
+    if (platform === 'native' && navigator.share) {
+      try {
+        await navigator.share({
+          title: '我的錢包地址',
+          text: shareText,
+        });
+        toast.success("分享成功");
+      } catch (error) {
+        // User cancelled or share failed
+        if ((error as Error).name !== 'AbortError') {
+          handleCopy(); // Fallback to copy
+        }
+      }
+    } else if (platform === 'whatsapp') {
+      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`;
+      window.open(whatsappUrl, '_blank');
+    } else if (platform === 'email') {
+      const mailtoUrl = `mailto:?subject=${encodeURIComponent('錢包付款地址')}&body=${encodeURIComponent(shareText)}`;
+      window.location.href = mailtoUrl;
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
@@ -94,11 +119,11 @@ export function ReceiveDialog({ address, trigger }: ReceiveDialogProps) {
           <TabsContent value="address" className="space-y-4 mt-4">
             <div className="flex flex-col items-center space-y-4">
               {qrCodeDataUrl && (
-                <div className="p-4 bg-white rounded-xl">
+                <div className="p-4 bg-white rounded-xl shadow-lg">
                   <img 
                     src={qrCodeDataUrl} 
                     alt="QR Code" 
-                    className="w-64 h-64"
+                    className="w-full max-w-[60vw] md:w-64 md:h-64"
                   />
                 </div>
               )}
@@ -123,6 +148,55 @@ export function ReceiveDialog({ address, trigger }: ReceiveDialogProps) {
                     )}
                   </Button>
                 </div>
+              </div>
+
+              {/* Share Buttons */}
+              <div className="w-full space-y-2">
+                <Label className="text-xs text-keylio-text-secondary">分享地址</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  <Button
+                    onClick={() => handleCopy()}
+                    variant="outline"
+                    size="sm"
+                    className="flex-col h-auto py-3 gap-1 border-keylio-border-primary hover:bg-keylio-bg-tertiary"
+                  >
+                    <Copy className="w-4 h-4" />
+                    <span className="text-xs">複製</span>
+                  </Button>
+                  
+                  <Button
+                    onClick={() => handleShare('whatsapp')}
+                    variant="outline"
+                    size="sm"
+                    className="flex-col h-auto py-3 gap-1 border-keylio-border-primary hover:bg-green-500/10 hover:text-green-500 hover:border-green-500/30"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    <span className="text-xs">WhatsApp</span>
+                  </Button>
+                  
+                  <Button
+                    onClick={() => handleShare('email')}
+                    variant="outline"
+                    size="sm"
+                    className="flex-col h-auto py-3 gap-1 border-keylio-border-primary hover:bg-blue-500/10 hover:text-blue-500 hover:border-blue-500/30"
+                  >
+                    <Mail className="w-4 h-4" />
+                    <span className="text-xs">Email</span>
+                  </Button>
+                </div>
+                
+                {/* Native Share Button (if supported) */}
+                {typeof navigator !== 'undefined' && 'share' in navigator && (
+                  <Button
+                    onClick={() => handleShare('native')}
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-2 border-keylio-border-primary hover:bg-keylio-teal/10 hover:text-keylio-teal hover:border-keylio-teal/30"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    <span className="text-sm">更多分享選項...</span>
+                  </Button>
+                )}
               </div>
 
               <div className="text-center text-sm text-keylio-text-secondary">

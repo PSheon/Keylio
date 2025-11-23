@@ -8,13 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { ArrowRight, Fingerprint, CheckCircle, Loader2, Users } from "lucide-react";
+import { ArrowRight, Fingerprint, CheckCircle, Loader2, Users, Zap, Sparkles } from "lucide-react";
 import { useProvider } from "@/hooks/usePlasma";
 import { ethers } from "ethers";
 import { authenticatePasskey } from "@/lib/passkey";
 import { getAllTokens, formatTokenAmount, formatUSD, getTokenValueUSD } from "@/lib/tokens";
 import { useTokenBalance } from "@/hooks/useTokenBalance";
 import { ContactPicker } from "@/components/contacts/ContactPicker";
+import { ACTIVE_CHAIN } from "@/lib/chain";
 
 interface SendDialogProps {
   fromAddress: string;
@@ -112,6 +113,20 @@ export function SendDialog({ fromAddress, trigger, onSuccess }: SendDialogProps)
     ? getTokenValueUSD(amount || "0", currentToken.symbol)
     : 0;
 
+  // Get current step number for indicator
+  const getCurrentStep = () => {
+    switch (step) {
+      case 'input': return 1;
+      case 'preview': return 2;
+      case 'sign': return 3;
+      case 'success': return 4;
+      default: return 1;
+    }
+  };
+
+  const currentStepNumber = getCurrentStep();
+  const totalSteps = 4;
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
@@ -120,6 +135,18 @@ export function SendDialog({ fromAddress, trigger, onSuccess }: SendDialogProps)
       <DialogContent className="bg-keylio-bg-secondary border-keylio-border-primary text-keylio-text-primary sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>發送</DialogTitle>
+          {/* Step Indicator */}
+          <div className="flex items-center gap-2 pt-2">
+            <div className="flex-1 h-1.5 bg-keylio-bg-tertiary rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-linear-to-r from-teal-500 to-teal-400 transition-all duration-300"
+                style={{ width: `${(currentStepNumber / totalSteps) * 100}%` }}
+              />
+            </div>
+            <span className="text-xs text-keylio-text-secondary font-medium">
+              Step {currentStepNumber} of {totalSteps}
+            </span>
+          </div>
         </DialogHeader>
 
         {step === 'input' && (
@@ -263,10 +290,28 @@ export function SendDialog({ fromAddress, trigger, onSuccess }: SendDialogProps)
                   <div className="text-xs text-keylio-text-muted">{formatUSD(valueUSD)}</div>
                 </div>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-400 text-sm">手續費</span>
-                <span className="text-teal-400 text-sm font-medium">✨ 極低 (Sepolia)</span>
+              
+              {/* Plasma Network Benefits */}
+              <div className="bg-teal-500/10 border border-teal-500/20 rounded-lg p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-teal-400" />
+                    <span className="text-sm font-medium text-teal-400">費用</span>
+                  </div>
+                  <span className="text-sm font-bold text-teal-400">$0 ✨</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-teal-400" />
+                    <span className="text-sm font-medium text-teal-400">確認時間</span>
+                  </div>
+                  <span className="text-sm font-bold text-teal-400">~0.5 秒 ⚡</span>
+                </div>
+                <div className="text-xs text-teal-300/70 text-center pt-1 border-t border-teal-500/20">
+                  {ACTIVE_CHAIN.displayName} 網路優勢
+                </div>
               </div>
+              
               {note && (
                 <div className="flex justify-between items-start">
                   <span className="text-gray-400 text-sm">備註</span>
