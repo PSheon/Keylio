@@ -1,26 +1,22 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Eye, EyeOff, ShieldCheck, Fingerprint, Wallet, Plus, Trash2, Shield, ShieldAlert, ArrowRight, Edit2, Check, X } from "lucide-react";
+import { Eye, EyeOff, ShieldCheck, Fingerprint, Wallet, Plus, Trash2, Edit2, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { useWalletStore } from "@/stores/useWalletStore";
 import { deriveWallet, encryptData } from "@/lib/crypto";
-import { registerPasskey } from "@/lib/passkey";
+import { usePasskeyManager } from "@/hooks/usePasskeyManager";
+import { usePasskeyEditor } from "@/hooks/usePasskeyEditor";
 import db from "@/lib/storage/db";
 
+import type { PasskeyMetadata } from "@/lib/storage/db";
 interface WalletSetupWizardProps {
   onComplete: () => void;
-}
-
-interface RegisteredPasskey {
-  id: string;
-  name: string;
-  createdAt: number;
 }
 
 export function WalletSetupWizard({ onComplete }: WalletSetupWizardProps) {
@@ -31,11 +27,10 @@ export function WalletSetupWizard({ onComplete }: WalletSetupWizardProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   
-  // Passkey State
-  const [passkeys, setPasskeys] = useState<RegisteredPasskey[]>([]);
-  const [editingPasskeyId, setEditingPasskeyId] = useState<string | null>(null);
-  const [editingName, setEditingName] = useState("");
-  const editInputRef = useRef<HTMLInputElement>(null);
+  const [passkeys, setPasskeys] = useState<PasskeyMetadata[]>([]);
+  
+  const passkeyManager = usePasskeyManager();
+  const passkeyEditor = usePasskeyEditor();
 
   const tempMnemonic = useWalletStore((state) => state.tempMnemonic);
   const setWallets = useWalletStore((state) => state.setWallets);
@@ -43,7 +38,6 @@ export function WalletSetupWizard({ onComplete }: WalletSetupWizardProps) {
   const clearTempMnemonic = useWalletStore((state) => state.clearTempMnemonic);
   const setSessionPassword = useWalletStore((state) => state.setSessionPassword);
 
-  // Auto-focus Step 1
   useEffect(() => {
     if (step === 1) {
       const timer = setTimeout(() => document.getElementById("wallet-name-input")?.focus(), 100);
@@ -51,23 +45,6 @@ export function WalletSetupWizard({ onComplete }: WalletSetupWizardProps) {
     }
   }, [step]);
 
-  // Auto-focus edit input
-  useEffect(() => {
-    if (editingPasskeyId && editInputRef.current) {
-      editInputRef.current.focus();
-    }
-  }, [editingPasskeyId]);
-
-  // --- Step 1: Identity ---
-  const handleStep1 = () => {
-    if (!name.trim()) {
-      toast.error("請輸入錢包名稱");
-      return;
-    }
-    setStep(2);
-  };
-
-  // --- Step 2: Password ---
   const getPasswordStrength = (pwd: string) => {
     let score = 0;
     if (pwd.length >= 8) score += 20;
@@ -102,62 +79,36 @@ export function WalletSetupWizard({ onComplete }: WalletSetupWizardProps) {
     setStep(3);
   };
 
-  // --- Step 3: Passkey & Creation ---
   const handleAddPasskey = async () => {
-    setIsProcessing(true);
-    try {
-      // Generate a default name
-      const defaultName = `Passkey ${passkeys.length + 1}`;
-      
-      // Trigger WebAuthn registration
-      await registerPasskey(defaultName); // The name here is just for display in browser prompt, we store our own
-      
-      const newPasskey: RegisteredPasskey = {
-        id: crypto.randomUUID(),
-        name: defaultName,
-        createdAt: Date.now(),
-      };
-      
+    const existingCredentialIds = passkeys.map(pk => pk.credentialId);
+    const newPasskey = await passkeyManager.addPasskey(undefined, existingCredentialIds);
+    if (newPasskey) {
       setPasskeys([...passkeys, newPasskey]);
-      toast.success("Passkey 新增成功");
-    } catch (error) {
-      console.error(error);
-      toast.error("Passkey 註冊失敗或取消");
-    } finally {
-      setIsProcessing(false);
     }
   };
 
-  const startEditing = (pk: RegisteredPasskey) => {
-    setEditingPasskeyId(pk.id);
-    setEditingName(pk.name);
-  };
-
-  const cancelEditing = () => {
-    setEditingPasskeyId(null);
-    setEditingName("");
-  };
-
-  const savePasskeyName = (id: string) => {
-    const trimmedName = editingName.trim();
-    if (!trimmedName) {
-      toast.error("名稱不能為空");
+  const handleStep1 = () => {
+    if (!name.trim()) {
+      toast.error("請輸入錢包名稱");
       return;
     }
-
-    if (passkeys.some(p => p.name === trimmedName && p.id !== id)) {
-      toast.error("名稱已存在，請使用其他名稱");
-      return;
-    }
-
-    setPasskeys(passkeys.map(p => p.id === id ? { ...p, name: trimmedName } : p));
-    setEditingPasskeyId(null);
-    setEditingName("");
-    toast.success("名稱已更新");
+    setStep(2);
   };
 
-  const removePasskey = (id: string) => {
-    setPasskeys(passkeys.filter(p => p.id !== id));
+  const savePasskeyName = async (id: string) => {
+    const existingNames = passkeys.filter(p => p.id !== id).map(p => p.name);
+    const success = await passkeyManager.updatePasskeyName(id, passkeyEditor.editingName, existingNames);
+    if (success) {
+      setPasskeys(passkeys.map(p => p.id === id ? { ...p, name: passkeyEditor.editingName.trim() } : p));
+      passkeyEditor.resetEditing();
+    }
+  };
+
+  const removePasskey = async (id: string) => {
+    const success = await passkeyManager.removePasskey(id);
+    if (success) {
+      setPasskeys(passkeys.filter(p => p.id !== id));
+    }
   };
 
   const handleCompleteSetup = async () => {
@@ -177,8 +128,20 @@ export function WalletSetupWizard({ onComplete }: WalletSetupWizardProps) {
       const wallet = deriveWallet(tempMnemonic, 0);
 
       await db.transaction('rw', db.settings, db.sub_wallets, async () => {
-        await db.settings.put({ key: 'encrypted_mnemonic', value: encryptedData });
-        await db.settings.put({ key: 'passkeys_metadata', value: passkeys });
+        // Get existing records to preserve IDs (prevents ConstraintError)
+        const existingMnemonic = await db.settings.get({ key: 'encrypted_mnemonic' });
+        const existingPasskeys = await db.settings.get({ key: 'passkeys_metadata' });
+
+        await db.settings.put({ 
+          id: existingMnemonic?.id,
+          key: 'encrypted_mnemonic', 
+          value: encryptedData 
+        });
+        await db.settings.put({ 
+          id: existingPasskeys?.id,
+          key: 'passkeys_metadata', 
+          value: passkeys 
+        });
 
         const subWallet = {
           name: name,
@@ -220,7 +183,7 @@ export function WalletSetupWizard({ onComplete }: WalletSetupWizardProps) {
             <span className="text-xs font-medium text-gray-500 tracking-wider uppercase">Setup Wizard</span>
             <span className="text-xs text-gray-500 font-mono">{step} / 3</span>
           </div>
-          <Progress value={(step / 3) * 100} className="h-1 bg-white/5 [&>*]:bg-teal-500" />
+          <Progress value={(step / 3) * 100} className="h-1 bg-white/5 *:bg-teal-500" />
         </CardHeader>
         
         <CardContent className="pt-8 min-h-[380px] flex flex-col">
@@ -344,7 +307,7 @@ export function WalletSetupWizard({ onComplete }: WalletSetupWizardProps) {
                   <Button 
                     onClick={handleStep2} 
                     disabled={!isPasswordValid}
-                    className="flex-[2] bg-white text-black hover:bg-gray-200 disabled:opacity-50 rounded-xl"
+                    className="flex-2 bg-white text-black hover:bg-gray-200 disabled:opacity-50 rounded-xl"
                   >
                     下一步
                   </Button>
@@ -371,7 +334,7 @@ export function WalletSetupWizard({ onComplete }: WalletSetupWizardProps) {
                 </div>
 
                 {/* Passkey List & Empty State */}
-                <div className="space-y-3 flex-1 overflow-y-auto max-h-[240px] pr-1">
+                <div className="space-y-3 flex-1 overflow-y-auto max-h-60 pr-1">
                   <AnimatePresence mode="popLayout">
                     {passkeys.length === 0 ? (
                       <motion.div
@@ -395,25 +358,25 @@ export function WalletSetupWizard({ onComplete }: WalletSetupWizardProps) {
                           exit={{ opacity: 0, x: -10 }}
                           className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/5 group hover:border-white/10 transition-colors"
                         >
-                          {editingPasskeyId === pk.id ? (
+                          {passkeyEditor.editingPasskeyId === pk.id ? (
                             <div className="flex items-center gap-2 w-full">
                               <div className="w-8 h-8 rounded-full bg-teal-500/10 flex items-center justify-center shrink-0">
                                 <ShieldCheck className="w-4 h-4 text-teal-400" />
                               </div>
                               <Input
-                                ref={editInputRef}
-                                value={editingName}
-                                onChange={(e) => setEditingName(e.target.value)}
+                                ref={passkeyEditor.editInputRef}
+                                value={passkeyEditor.editingName}
+                                onChange={(e) => passkeyEditor.setEditingName(e.target.value)}
                                 className="h-8 bg-black/20 border-white/10 text-sm"
                                 onKeyDown={(e) => {
                                   if (e.key === 'Enter') savePasskeyName(pk.id);
-                                  if (e.key === 'Escape') cancelEditing();
+                                  if (e.key === 'Escape') passkeyEditor.cancelEditing();
                                 }}
                               />
                               <button onClick={() => savePasskeyName(pk.id)} className="p-1.5 text-green-400 hover:bg-green-500/10 rounded">
                                 <Check size={14} />
                               </button>
-                              <button onClick={cancelEditing} className="p-1.5 text-gray-400 hover:bg-white/10 rounded">
+                              <button onClick={passkeyEditor.cancelEditing} className="p-1.5 text-gray-400 hover:bg-white/10 rounded">
                                 <X size={14} />
                               </button>
                             </div>
@@ -430,8 +393,8 @@ export function WalletSetupWizard({ onComplete }: WalletSetupWizardProps) {
                               </div>
                               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button
-                                  onClick={() => startEditing(pk)}
-                                  className="p-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                                  onClick={() => passkeyEditor.startEditing(pk)}
+                                  className="p-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded transition-colors"
                                   title="重新命名"
                                 >
                                   <Edit2 size={14} />
@@ -452,7 +415,7 @@ export function WalletSetupWizard({ onComplete }: WalletSetupWizardProps) {
                   </AnimatePresence>
 
                   {/* Add Another Device (Small Button) */}
-                  {passkeys.length > 0 && !editingPasskeyId && (
+                  {passkeys.length > 0 && !passkeyEditor.editingPasskeyId && (
                     <motion.button
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
@@ -470,8 +433,8 @@ export function WalletSetupWizard({ onComplete }: WalletSetupWizardProps) {
                   </Button>
                   <Button
                     onClick={handleCompleteSetup}
-                    disabled={isProcessing || passkeys.length === 0 || !!editingPasskeyId}
-                    className="flex-[2] bg-white text-black hover:bg-gray-200 rounded-xl"
+                    disabled={isProcessing || passkeys.length === 0 || !!passkeyEditor.editingPasskeyId}
+                    className="flex-2 bg-white text-black hover:bg-gray-200 rounded-xl"
                   >
                     {isProcessing ? "處理中..." : "完成設定"}
                   </Button>

@@ -9,8 +9,12 @@ import { Lock, ArrowRight, Fingerprint, Unlock } from "lucide-react";
 import { toast } from "sonner";
 import { useWalletStore } from "@/stores/useWalletStore";
 import db from "@/lib/storage/db";
-import { decryptData } from "@/lib/crypto";
+import { decryptData,  } from "@/lib/crypto";
 import { authenticatePasskey } from "@/lib/passkey";
+import { useLiveQuery } from "dexie-react-hooks";
+
+import type { PasskeyMetadata } from "@/lib/storage/db";
+import type { EncryptedData } from "@/lib/crypto";
 
 interface UnlockScreenProps {
   onUnlock: () => void;
@@ -22,6 +26,13 @@ export function UnlockScreen({ onUnlock }: UnlockScreenProps) {
   const [isShake, setIsShake] = useState(false);
   const setUnlocked = useWalletStore((state) => state.setUnlocked);
   const setSessionPassword = useWalletStore((state) => state.setSessionPassword);
+
+  // Fetch default Passkey with auto-update
+  const defaultPasskey = useLiveQuery(async () => {
+    const setting = await db.settings.get({ key: 'passkeys_metadata' });
+    const passkeys = (setting?.value as PasskeyMetadata[]) || [];
+    return passkeys.find(pk => pk.isDefault) || null;
+  });
 
   const handleUnlock = async () => {
     if (!password) {
@@ -38,7 +49,7 @@ export function UnlockScreen({ onUnlock }: UnlockScreenProps) {
       if (!setting) throw new Error("No mnemonic found");
 
       // If decryption succeeds, the password is correct
-      await decryptData(setting.value, password);
+      await decryptData(setting.value as EncryptedData, password);
       
       setSessionPassword(password);
       setUnlocked(true);
@@ -57,13 +68,42 @@ export function UnlockScreen({ onUnlock }: UnlockScreenProps) {
   const handlePasskeyUnlock = async () => {
     setIsProcessing(true);
     try {
-      await authenticatePasskey();
+      // Try default Passkey first
+      let result;
+      try {
+        result = await authenticatePasskey(defaultPasskey?.credentialId);
+      } catch (defaultError) {
+        // If default Passkey fails, try without specifying (let user choose)
+        if (defaultPasskey) {
+          toast.info("預設 Passkey 無法使用，請選擇其他 Passkey");
+          result = await authenticatePasskey();
+        } else {
+          throw defaultError;
+        }
+      }
+      
+      // Update last used timestamp
+      if (result.credentialId) {
+        const setting = await db.settings.get({ key: 'passkeys_metadata' });
+        const passkeys = (setting?.value as PasskeyMetadata[]) || [];
+        const updatedPasskeys = passkeys.map(pk => 
+          pk.credentialId === result.credentialId 
+            ? { ...pk, lastUsed: Date.now() } 
+            : pk
+        );
+        await db.settings.put({
+          id: setting?.id,
+          key: 'passkeys_metadata',
+          value: updatedPasskeys
+        });
+      }
+      
       setUnlocked(true);
       onUnlock();
       toast.success("Passkey 驗證成功");
     } catch (error) {
       console.error(error);
-      toast.error("Passkey 驗證失敗");
+      toast.error("Passkey 驗證失敗，請使用密碼登入");
     } finally {
       setIsProcessing(false);
     }
@@ -89,7 +129,7 @@ export function UnlockScreen({ onUnlock }: UnlockScreenProps) {
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.1 }}
-              className="mx-auto w-20 h-20 bg-gradient-to-br from-teal-500/20 to-purple-500/20 rounded-full flex items-center justify-center mb-6 ring-1 ring-white/10 shadow-[0_0_30px_rgba(20,184,166,0.2)] relative group"
+              className="mx-auto w-20 h-20 bg-linear-to-br from-teal-500/20 to-purple-500/20 rounded-full flex items-center justify-center mb-6 ring-1 ring-white/10 shadow-[0_0_30px_rgba(20,184,166,0.2)] relative group"
             >
               <div className="absolute inset-0 rounded-full bg-teal-500/10 blur-md group-hover:blur-lg transition-all duration-500"></div>
               {isProcessing ? (
@@ -99,7 +139,7 @@ export function UnlockScreen({ onUnlock }: UnlockScreenProps) {
               )}
             </motion.div>
             
-            <CardTitle className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-keylio-text-primary to-keylio-text-secondary mb-2">
+            <CardTitle className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-keylio-text-primary to-keylio-text-secondary mb-2">
               歡迎回來
             </CardTitle>
             <CardDescription className="text-keylio-text-secondary">
@@ -115,11 +155,16 @@ export function UnlockScreen({ onUnlock }: UnlockScreenProps) {
               disabled={isProcessing}
               className="w-full border-keylio-border-primary hover:bg-keylio-bg-tertiary hover:text-keylio-text-primary h-14 rounded-xl transition-all group relative overflow-hidden"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-teal-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="absolute inset-0 bg-linear-to-r from-teal-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <div className="w-10 h-10 rounded-full bg-teal-500/10 flex items-center justify-center mr-4 group-hover:scale-110 transition-transform relative z-10">
                 <Fingerprint className="w-5 h-5 text-teal-500" />
               </div>
-              <span className="text-lg font-medium relative z-10">使用 Passkey 快速登入</span>
+              <span className="text-lg font-medium relative z-10">
+                {defaultPasskey 
+                  ? `使用 ${defaultPasskey.name} 快速登入` 
+                  : "使用 Passkey 快速登入"
+                }
+              </span>
             </Button>
 
             <div className="relative py-2">

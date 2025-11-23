@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Eye, EyeOff, Copy, AlertTriangle, CheckCircle, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import db from "@/lib/storage/db";
-import { decryptData } from "@/lib/crypto";
+import { decryptData, type EncryptedData } from "@/lib/crypto";
 import { useLiveQuery } from "dexie-react-hooks";
 import { authenticatePasskey } from "@/lib/passkey";
 
@@ -47,11 +47,11 @@ export function BackupFlow({ onComplete }: BackupFlowProps) {
       const setting = await db.settings.get({ key: 'encrypted_mnemonic' });
       if (!setting) throw new Error("No mnemonic found");
 
-      const decrypted = await decryptData(setting.value, password);
+      const decrypted = await decryptData(setting.value as EncryptedData, password);
       setMnemonic(decrypted);
       setIsRevealed(true);
       setStep('display');
-    } catch (error) {
+    } catch {
       toast.error("密碼錯誤");
     }
   };

@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Wallet, Settings, Bell, Menu, X, LogOut, PieChart, ArrowRightLeft } from "lucide-react";
+import { Wallet, Settings, Menu, X, LogOut, PieChart, ArrowRightLeft } from "lucide-react";
 import { useWalletStore } from "@/stores/useWalletStore";
 import { useRouter, usePathname } from "next/navigation";
 
@@ -56,7 +54,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       >
         <div className="p-6 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-teal-500 to-teal-300 flex items-center justify-center shadow-lg shadow-teal-500/20">
+            <div className="w-8 h-8 rounded-xl bg-linear-to-tr from-teal-500 to-teal-300 flex items-center justify-center shadow-lg shadow-teal-500/20">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
@@ -72,7 +70,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <path d="M18 12a2 2 0 0 0 0 4h4v-4Z" />
               </svg>
             </div>
-            <span className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-keylio-text-primary to-keylio-text-secondary">Keylio</span>
+            <span className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-linear-to-r from-keylio-text-primary to-keylio-text-secondary">Keylio</span>
           </div>
           <button onClick={() => setIsSidebarOpen(false)} className="md:hidden text-keylio-text-secondary">
             <X size={24} />
