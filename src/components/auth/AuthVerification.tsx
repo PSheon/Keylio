@@ -24,7 +24,7 @@ export interface AuthVerificationProps {
    */
   requirePassword?: boolean;
   /**
-   * 標題
+   * 標題（空字串時不顯示頭部）
    */
   title?: string;
   /**
@@ -158,17 +158,22 @@ function AuthVerificationComponent({
       ? `已設定 ${passkeyCount} 組裝置`
       : "請驗證以繼續");
 
+  // 是否顯示頭部（當 title 為空字串時不顯示）
+  const showHeader = title !== "";
+
   return (
-    <div className="py-6">
-      <div className="text-center mb-6">
-        <div className="w-16 h-16 bg-teal-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Lock className="w-8 h-8 text-teal-400" />
+    <div className={showHeader ? "py-6" : "py-2"}>
+      {showHeader ? (
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 bg-teal-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Lock className="w-8 h-8 text-teal-400" />
+          </div>
+          <p className="text-keylio-text-primary font-medium">{title}</p>
+          <p className="text-sm text-keylio-text-secondary mt-1">
+            {displayDescription}
+          </p>
         </div>
-        <p className="text-keylio-text-primary font-medium">{title}</p>
-        <p className="text-sm text-keylio-text-secondary mt-1">
-          {displayDescription}
-        </p>
-      </div>
+      ) : null}
 
       {!showPasswordInput && passkeyCount > 0 ? (
         // Passkey authentication (primary)
