@@ -11,7 +11,7 @@ import {
   Clock,
   Upload,
 } from "lucide-react";
-import { toast } from "sonner";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 import { AddContactDialog } from "@/components/contacts/AddContactDialog";
 import { ContactRow } from "@/components/contacts/ContactRow";
 import { EditContactDialog } from "@/components/contacts/EditContactDialog";
@@ -22,9 +22,11 @@ import { SendDialog } from "@/components/transaction/SendDialog";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
+import { PageTransition, PageSection } from "@/components/ui/page-transition";
 import { DashboardLayout } from "@/components/wallet/DashboardLayout";
-import { fadeInUp, staggerContainer } from "@/lib/animations";
+import { fadeInUp } from "@/lib/animations";
 import db, { type Contact } from "@/lib/storage/db";
+import { showSuccess, showError, showInfo } from "@/lib/toast";
 import { useWalletStore } from "@/stores/useWalletStore";
 
 /**
@@ -87,7 +89,7 @@ function ContactsPage() {
         .first();
 
       if (existing) {
-        toast.info(`${data.name || '此聯絡人'} 已經在聯絡簿中`);
+        showInfo("已在聯絡簿中", data.name || '此聯絡人');
         setShowScanner(false);
         return;
       }
@@ -100,11 +102,11 @@ function ContactsPage() {
         createdAt: Date.now(),
       });
 
-      toast.success(`已添加聯絡人 ${data.name || data.address.slice(0, 6)}`);
+      showSuccess("已添加聯絡人", data.name || data.address.slice(0, 6));
       setShowScanner(false);
     } catch (error) {
       console.error("Failed to add contact:", error);
-      toast.error("添加聯絡人失敗");
+      showError("添加聯絡人失敗");
     }
   }, []);
 
@@ -117,7 +119,7 @@ function ContactsPage() {
         .first();
 
       if (existing) {
-        toast.info(`${data.name || '此聯絡人'} 已經在聯絡簿中`);
+        showInfo("已在聯絡簿中", data.name || '此聯絡人');
         return;
       }
 
@@ -128,10 +130,10 @@ function ContactsPage() {
         createdAt: Date.now(),
       });
 
-      toast.success(`已添加聯絡人 ${data.name || data.address.slice(0, 6)}`);
+      showSuccess("已添加聯絡人", data.name || data.address.slice(0, 6));
     } catch (error) {
       console.error("Failed to add contact:", error);
-      toast.error("添加聯絡人失敗");
+      showError("添加聯絡人失敗");
     }
   }, []);
 
@@ -148,9 +150,9 @@ function ContactsPage() {
     if (!contact.id) return;
     try {
       await db.contacts.delete(contact.id);
-      toast.success("已刪除聯絡人");
+      showSuccess("已刪除聯絡人", contact.name);
     } catch {
-      toast.error("刪除失敗");
+      showError("刪除失敗");
     }
   }, []);
 
@@ -158,22 +160,18 @@ function ContactsPage() {
     if (!contact.id) return;
     try {
       await db.contacts.update(contact.id, { isFavorite: !contact.isFavorite });
-      toast.success(contact.isFavorite ? "已取消收藏" : "已加入收藏");
+      showSuccess(contact.isFavorite ? "已取消收藏" : "已加入收藏", contact.name);
     } catch {
-      toast.error("操作失敗");
+      showError("操作失敗");
     }
   }, []);
 
   return (
-    <DashboardLayout>
-      <motion.div
-        className="space-y-6"
-        variants={staggerContainer}
-        initial="initial"
-        animate="animate"
-      >
+    <AuthGuard>
+      <DashboardLayout>
+        <PageTransition>
         {/* ===== 上方區域：搜尋 + 新增按鈕 ===== */}
-        <motion.div variants={fadeInUp} className="space-y-4">
+        <PageSection className="space-y-4">
           {/* Header */}
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-keylio-text-primary">聯絡簿</h1>
@@ -190,10 +188,10 @@ function ContactsPage() {
               className="pl-10 bg-keylio-bg-secondary border-keylio-border-primary"
             />
           </div>
-        </motion.div>
+        </PageSection>
 
         {/* ===== 中間區域：聯絡人列表 ===== */}
-        <motion.div variants={fadeInUp} className="space-y-6">
+        <PageSection className="space-y-6">
           <AnimatePresence mode="popLayout">
             {/* Favorites Section */}
             {favorites.length > 0 && (
@@ -293,11 +291,11 @@ function ContactsPage() {
                 />
               </motion.div> : null}
           </AnimatePresence>
-        </motion.div>
+        </PageSection>
 
         {/* ===== 下方區域：空狀態 CTA ===== */}
         {!hasContacts && (
-          <motion.div variants={fadeInUp} className="space-y-4">
+          <PageSection className="space-y-4">
             {/* Empty State */}
             <div className="bg-keylio-bg-secondary rounded-2xl border border-keylio-border-primary p-8">
               <EmptyState
@@ -339,17 +337,17 @@ function ContactsPage() {
 
             {/* Import from contacts (future feature) */}
             <button
-              onClick={() => toast.info("即將推出：匯入通訊錄")}
+              onClick={() => showInfo("即將推出", "匯入通訊錄")}
               className="w-full flex items-center justify-center gap-2 p-3 text-keylio-text-muted hover:text-keylio-text-primary hover:bg-keylio-bg-secondary rounded-xl transition-colors"
             >
               <Upload className="w-4 h-4" />
               <span className="text-sm">從通訊錄匯入</span>
             </button>
-          </motion.div>
+          </PageSection>
         )}
 
         {/* Quick Add Buttons - Only show when has contacts */}
-        {hasContacts ? <motion.div variants={fadeInUp} className="flex gap-2">
+        {hasContacts ? <PageSection className="flex gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -365,13 +363,11 @@ function ContactsPage() {
               onClick={() => setShowNFCDialog(true)}
               className="flex-1 border-keylio-border-primary hover:bg-purple-500/10 hover:border-purple-500 hover:text-purple-400"
             >
-              <Wifi className="w-4 h-4 mr-1.5" />
-              NFC 交換
-            </Button>
-          </motion.div> : null}
-      </motion.div>
-
-      {/* ===== Dialogs ===== */}
+            <Wifi className="w-4 h-4 mr-1.5" />
+            NFC 交換
+          </Button>
+        </PageSection> : null}
+      </PageTransition>      {/* ===== Dialogs ===== */}
 
       {/* QR Scanner Dialog */}
       <QRScanner
@@ -411,6 +407,7 @@ function ContactsPage() {
         onSuccess={() => setSendingToContact(null)}
       />
     </DashboardLayout>
+    </AuthGuard>
   );
 }
 

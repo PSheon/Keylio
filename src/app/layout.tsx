@@ -1,4 +1,5 @@
 import { Geist, Geist_Mono } from "next/font/google";
+import { cookies } from "next/headers";
 import { type Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "sonner";
@@ -22,13 +23,27 @@ export const metadata: Metadata = {
   description: "Decentralized HD Wallet for Plasma Chain",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Read theme from cookie (Server-side)
+  const cookieStore = await cookies();
+  const themeCookie = cookieStore.get("keylio-theme")?.value;
+
+  // Resolve theme class for SSR (prevents flash)
+  let themeClass: "light" | "dark" = "dark";
+  if (themeCookie === "light") {
+    themeClass = "light";
+  } else if (themeCookie === "system") {
+    // For system theme, we default to dark on server
+    // Client will correct this if needed (minimal flash for system users only)
+    themeClass = "dark";
+  }
+
   return (
-    <html lang="zh-TW" suppressHydrationWarning>
+    <html lang="zh-TW" className={themeClass} suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
