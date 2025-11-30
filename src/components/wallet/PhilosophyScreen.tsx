@@ -1,9 +1,11 @@
 "use client";
 
-import { memo } from "react";
-import { motion } from "framer-motion";
-import { Shield, Lock, KeyRound } from "lucide-react";
+import { memo, useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Shield, Lock, KeyRound, CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { generateMnemonic } from "@/lib/crypto";
+import { useWalletStore } from "@/stores/useWalletStore";
 
 interface PhilosophyScreenProps {
   onStart: () => void;
@@ -12,6 +14,47 @@ interface PhilosophyScreenProps {
 export const PhilosophyScreen = memo(function PhilosophyScreen({
   onStart,
 }: PhilosophyScreenProps) {
+  const tempMnemonic = useWalletStore((state) => state.tempMnemonic);
+  const setTempMnemonic = useWalletStore((state) => state.setTempMnemonic);
+
+  // Check if mnemonic is already ready (from previous session or already generated)
+  const [isMnemonicReady, setIsMnemonicReady] = useState(() => !!tempMnemonic);
+  const [showStatus, setShowStatus] = useState(false);
+  const [statusItems, setStatusItems] = useState([false, false, false]);
+
+  // Generate mnemonic in background
+  useEffect(() => {
+    if (tempMnemonic) return; // Already have mnemonic
+
+    const timer = setTimeout(() => {
+      const mnemonic = generateMnemonic();
+      setTempMnemonic(mnemonic);
+      setIsMnemonicReady(true);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [tempMnemonic, setTempMnemonic]);  // Animate status items sequentially
+  useEffect(() => {
+    const timer1 = setTimeout(() => setShowStatus(true), 1200);
+    const timer2 = setTimeout(() => setStatusItems(prev => [true, prev[1], prev[2]]), 1600);
+    const timer3 = setTimeout(() => setStatusItems(prev => [prev[0], true, prev[2]]), 2000);
+    const timer4 = setTimeout(() => setStatusItems(prev => [prev[0], prev[1], true]), 2400);
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+      clearTimeout(timer4);
+    };
+  }, []);
+
+  const statusList = [
+    { label: "安全環境已初始化", ready: statusItems[0] },
+    { label: "加密引擎已就緒", ready: statusItems[1] },
+    { label: "錢包金鑰已生成", ready: statusItems[2] && isMnemonicReady },
+  ];
+
+  const allReady = isMnemonicReady && statusItems.every(Boolean);
+
   return (
     <div className="relative flex flex-col items-center justify-center min-h-screen bg-[#050505] text-white overflow-hidden px-6">
       {/* Background Effects */}
@@ -98,22 +141,53 @@ export const PhilosophyScreen = memo(function PhilosophyScreen({
           <TrustBadge icon="👆" label="生物辨識" />
         </motion.div>
 
+        {/* Initialization Status - Fixed height container to prevent layout shift */}
+        <div className="h-10 mb-8 flex items-center justify-center">
+          <AnimatePresence>
+            {showStatus ? <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex justify-center gap-3"
+              >
+                {statusList.map((item, index) => (
+                  <motion.div
+                    key={item.label}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.2 }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10"
+                  >
+                    {item.ready ? (
+                      <CheckCircle2 className="w-3.5 h-3.5 text-teal-400" />
+                    ) : (
+                      <Loader2 className="w-3.5 h-3.5 text-gray-500 animate-spin" />
+                    )}
+                    <span className={`text-xs ${item.ready ? 'text-white' : 'text-gray-500'}`}>
+                      {item.label}
+                    </span>
+                  </motion.div>
+                ))}
+              </motion.div> : null}
+          </AnimatePresence>
+        </div>
+
         {/* CTA Button */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          animate={{ opacity: allReady ? 1 : 0.5, y: 0 }}
           transition={{ delay: 1, duration: 0.6 }}
         >
           <Button
             onClick={onStart}
+            disabled={!allReady}
             size="lg"
-            className="w-full max-w-xs h-14 text-lg font-semibold bg-linear-to-r from-teal-500 to-teal-400 hover:from-teal-400 hover:to-teal-300 text-black rounded-2xl shadow-lg shadow-teal-500/25 transition-all hover:shadow-teal-500/40 hover:scale-[1.02]"
+            className="w-full max-w-xs h-14 text-lg font-semibold bg-linear-to-r from-teal-500 to-teal-400 hover:from-teal-400 hover:to-teal-300 text-black rounded-2xl shadow-lg shadow-teal-500/25 transition-all hover:shadow-teal-500/40 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
-            開始設定
+            {allReady ? "開始設定" : "準備中..."}
           </Button>
 
           <p className="mt-4 text-xs text-gray-500">
-            設定只需 1 分鐘
+            {allReady ? "設定只需 1 分鐘" : "正在初始化安全環境..."}
           </p>
         </motion.div>
       </motion.div>

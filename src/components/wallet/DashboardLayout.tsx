@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { Home, Users, Settings, X, LogOut, Clock, AlertTriangle } from "lucide-react";
 import { BottomNavigation } from "@/components/navigation";
+import { useRouterContext } from "@/components/providers/RouterProvider";
 import { useSessionContext } from "@/components/providers/SessionProvider";
 import { useActivityTracker } from "@/hooks/useActivityTracker";
 import { ACTIVE_CHAIN } from "@/lib/chain";
@@ -17,7 +18,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const setUnlocked = useWalletStore((state) => state.setUnlocked);
   const destroySession = useWalletStore((state) => state.destroySession);
-  const router = useRouter();
+  const { navigateTo } = useRouterContext();
   const pathname = usePathname();
 
   // Track if session was ever active (to detect expiration vs initial load)
@@ -54,8 +55,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const handleLogout = useCallback(() => {
     destroySession();
     setUnlocked(false);
-    router.push("/");
-  }, [destroySession, setUnlocked, router]);
+    navigateTo("/");
+  }, [destroySession, setUnlocked, navigateTo]);
 
   useEffect(() => {
     // Only auto-logout if session was previously active and is now inactive
@@ -163,7 +164,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               <button
                 key={item.label}
                 onClick={() => {
-                  router.push(item.path);
+                  navigateTo(item.path);
                   setIsSidebarOpen(false);
                 }}
                 className={`

@@ -9,13 +9,12 @@ import { PhilosophyScreen } from "@/components/wallet/PhilosophyScreen";
 import { PortfolioHome } from "@/components/wallet/PortfolioHome";
 import { UnlockScreen } from "@/components/wallet/UnlockScreen";
 import { WalletSetupWizard } from "@/components/wallet/WalletSetupWizard";
-import { WelcomeScreen } from "@/components/wallet/WelcomeScreen";
 import db from "@/lib/storage/db";
 import { useWalletStore } from "@/stores/useWalletStore";
 
 // Flow per Spec Phase 1:
-// welcome (logo animation) → philosophy (brand message) → setup (password + passkey) → dashboard
-type AppView = 'loading' | 'welcome' | 'philosophy' | 'setup' | 'unlock' | 'dashboard';
+// philosophy (brand message) → setup (intro + password + passkey) → dashboard
+type AppView = 'loading' | 'philosophy' | 'setup' | 'unlock' | 'dashboard';
 
 export default function Home() {
   const viewOverride = useWalletStore((state) => state.viewOverride);
@@ -31,7 +30,7 @@ export default function Home() {
   // Compute initial view based on wallet state (no setState in effect)
   const computedInitialView = useMemo<AppView | null>(() => {
     if (subWallets === undefined) return null; // Still loading
-    if (subWallets.length === 0) return 'welcome';
+    if (subWallets.length === 0) return 'philosophy';
     return isUnlocked ? 'dashboard' : 'unlock';
   }, [subWallets, isUnlocked]);
 
@@ -59,14 +58,11 @@ export default function Home() {
   switch (currentView) {
     case 'loading':
       return <LoadingScreen />;
-    case 'welcome':
-      // Step 0: Logo animation (3-5 seconds)
-      return <WelcomeScreen onComplete={() => setView('philosophy')} />;
     case 'philosophy':
       // Step 1 (Spec): Philosophy/Brand message page
       return <PhilosophyScreen onStart={() => setView('setup')} />;
     case 'setup':
-      // Step 2-3 (Spec): Password setup + PassKey setup
+      // Step 2-4 (Spec): Intro + Password setup + PassKey setup (now combined in wizard)
       return <WalletSetupWizard onComplete={() => setView('dashboard')} />;
     case 'unlock':
       return <UnlockScreen onUnlock={() => setView('dashboard')} />;

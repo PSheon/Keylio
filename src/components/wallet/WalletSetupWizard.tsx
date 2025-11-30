@@ -15,6 +15,7 @@ import db from "@/lib/storage/db";
 import type { PasskeyMetadata } from "@/lib/storage/db";
 import { showSuccess, showError } from "@/lib/toast";
 import { useWalletStore } from "@/stores/useWalletStore";
+
 interface WalletSetupWizardProps {
   onComplete: () => void;
 }
@@ -22,8 +23,11 @@ interface WalletSetupWizardProps {
 // Default wallet name
 const DEFAULT_WALLET_NAME = "主錢包";
 
+// Total steps: 1 (Password) + 2 (Passkey) = 2 steps
+const TOTAL_STEPS = 2;
+
 export const WalletSetupWizard = memo(function WalletSetupWizard({ onComplete }: WalletSetupWizardProps) {
-  // Spec: Step 1 = Password, Step 2 = PassKey (2 steps total)
+  // Step 1 = Password, Step 2 = PassKey
   const [step, setStep] = useState(1);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -189,14 +193,14 @@ export const WalletSetupWizard = memo(function WalletSetupWizard({ onComplete }:
         <CardHeader className="pb-2 border-b border-white/5">
           <div className="flex justify-between items-center mb-2">
             <span className="text-xs font-medium text-gray-500 tracking-wider uppercase">Setup Wizard</span>
-            <span className="text-xs text-gray-500 font-mono">{step} / 2</span>
+            <span className="text-xs text-gray-500 font-mono">{step} / {TOTAL_STEPS}</span>
           </div>
-          <Progress value={(step / 2) * 100} className="h-1 bg-white/5 *:bg-teal-500" />
+          <Progress value={(step / TOTAL_STEPS) * 100} className="h-1 bg-white/5 *:bg-teal-500" />
         </CardHeader>
 
         <CardContent className="pt-8 min-h-[420px] flex flex-col">
           <AnimatePresence mode="wait">
-            {/* Step 1: Password Setup (per Spec) */}
+            {/* Step 1: Password Setup */}
             {step === 1 && (
               <PasswordStep
                 password={password}
@@ -213,7 +217,7 @@ export const WalletSetupWizard = memo(function WalletSetupWizard({ onComplete }:
               />
             )}
 
-            {/* Step 2: PassKey Setup (per Spec) */}
+            {/* Step 2: PassKey Setup */}
             {step === 2 && (
               <PasskeyStep
                 passkeys={passkeys}
@@ -288,8 +292,14 @@ const PasswordStep = memo(function PasswordStep({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="設定錢包密碼"
-              autoComplete="off"
+              autoComplete="new-password"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
               data-form-type="other"
+              data-lpignore="true"
+              data-1p-ignore="true"
+              name="keylio-wallet-pwd"
               className="bg-white/5 border-white/10 focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/50 pr-10 h-12 rounded-xl transition-all"
             />
             <button
@@ -329,11 +339,20 @@ const PasswordStep = memo(function PasswordStep({
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder="確認密碼"
-            autoComplete="off"
+            autoComplete="new-password"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
             data-form-type="other"
+            data-lpignore="true"
+            data-1p-ignore="true"
+            name="keylio-wallet-pwd-confirm"
             className={`bg-white/5 border-white/10 h-12 rounded-xl ${confirmPassword && password !== confirmPassword ? 'border-red-500/50' : ''}`}
           />
-          {confirmPassword && password !== confirmPassword ? <p className="text-xs text-red-400 text-right px-1">密碼不一致</p> : null}
+          {/* Fixed height container to prevent layout shift */}
+          <div className="h-4 px-1">
+            {confirmPassword && password !== confirmPassword ? <p className="text-xs text-red-400 text-right">密碼不一致</p> : null}
+          </div>
         </div>
       </div>
 
