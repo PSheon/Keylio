@@ -8,14 +8,16 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { ArrowRight, Fingerprint, CheckCircle, Loader2, Users, Zap, Sparkles } from "lucide-react";
-import { useProvider } from "@/hooks/usePlasma";
+import { ArrowRight, Fingerprint, CheckCircle, Loader2, Users, Zap, Sparkles, ExternalLink } from "lucide-react";
 import { ethers } from "ethers";
 import { authenticatePasskey } from "@/lib/passkey";
 import { getAllTokens, formatTokenAmount, formatUSD, getTokenValueUSD } from "@/lib/tokens";
 import { useTokenBalance } from "@/hooks/useTokenBalance";
-import { ContactPicker } from "@/components/contacts/ContactPicker";
+import { ContactPickerDialog } from "@/components/contacts/ContactPickerDialog";
 import { ACTIVE_CHAIN } from "@/lib/chain";
+import { sendTransactionWithSession, validateTransaction, type TransactionResult } from "@/lib/transaction";
+import { useWalletStore } from "@/stores/useWalletStore";
+import { KeylioError, ErrorCode } from "@/lib/errors";
 
 interface SendDialogProps {
   fromAddress: string;
@@ -31,10 +33,14 @@ export function SendDialog({ fromAddress, trigger, onSuccess }: SendDialogProps)
   const [amount, setAmount] = useState("");
   const [selectedToken, setSelectedToken] = useState("USDT");
   const [note, setNote] = useState("");
-  const [showContactPicker, setShowContactPicker] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [txResult, setTxResult] = useState<TransactionResult | null>(null);
+  
+  // Get current wallet index
+  const getCurrentWallet = useWalletStore((state) => state.getCurrentWallet);
+  const currentWallet = getCurrentWallet();
+  const walletIndex = currentWallet?.index ?? 0;
 
-  const provider = useProvider();
   const tokens = getAllTokens();
   const currentToken = tokens.find(t => t.symbol === selectedToken);  
   
@@ -54,7 +60,6 @@ export function SendDialog({ fromAddress, trigger, onSuccess }: SendDialogProps)
   const handleContactSelect = (address: string, name?: string) => {
     setRecipient(address);
     if (name) setRecipientName(name);
-    setShowContactPicker(false);
   };
 
   const handlePreview = () => {
@@ -81,17 +86,59 @@ export function SendDialog({ fromAddress, trigger, onSuccess }: SendDialogProps)
   const handleSign = async () => {
     setIsProcessing(true);
     try {
+      // 1. Authenticate with Passkey
       await authenticatePasskey();
-      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // TODO: Save transaction with note to database
+      // 2. Validate transaction
+      const validation = await validateTransaction(fromAddress, {
+        to: recipient,
+        amount,
+        tokenAddress: currentToken?.address,
+        note,
+      });
       
+      if (!validation.isValid) {
+        toast.error(validation.error || "交易驗證失敗");
+        setIsProcessing(false);
+        return;
+      }
+      
+      // 3. Send transaction using session
+      const result = await sendTransactionWithSession(walletIndex, {
+        to: recipient,
+        amount,
+        tokenAddress: currentToken?.address,
+        note,
+        label: recipientName || undefined,
+      });
+      
+      setTxResult(result);
       setStep('success');
       toast.success("交易已發送");
       if (onSuccess) onSuccess();
     } catch (error) {
       console.error(error);
-      toast.error("驗證失敗或取消");
+      
+      if (error instanceof KeylioError) {
+        switch (error.code) {
+          case ErrorCode.AUTH_SESSION_EXPIRED:
+            toast.error("會話已過期，請重新登入");
+            break;
+          case ErrorCode.WALLET_DECRYPTION_FAILED:
+            toast.error("解密失敗，請重新登入");
+            break;
+          case ErrorCode.TX_INSUFFICIENT_BALANCE:
+            toast.error("餘額不足");
+            break;
+          case ErrorCode.TX_GAS_ESTIMATION_FAILED:
+            toast.error("Gas 估算失敗，請稍後再試");
+            break;
+          default:
+            toast.error(error.message || "交易失敗");
+        }
+      } else {
+        toast.error("驗證失敗或取消");
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -105,7 +152,7 @@ export function SendDialog({ fromAddress, trigger, onSuccess }: SendDialogProps)
       setRecipientName("");
       setAmount("");
       setNote("");
-      setShowContactPicker(false);
+      setTxResult(null);
     }, 300);
   };
 
@@ -179,46 +226,38 @@ export function SendDialog({ fromAddress, trigger, onSuccess }: SendDialogProps)
               </div>
             </div>
 
-            {/* Recipient - Contact Picker or Manual Input */}
+            {/* Recipient - Contact Picker Dialog */}
             <div className="grid gap-2">
-              <div className="flex items-center justify-between">
-                <Label>收款人</Label>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowContactPicker(!showContactPicker)}
-                  className="h-7 text-xs text-keylio-teal hover:text-keylio-teal/80"
-                >
-                  <Users className="w-3 h-3 mr-1" />
-                  {showContactPicker ? "手動輸入" : "選擇聯絡人"}
-                </Button>
+              <Label>收款人</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={recipient}
+                  onChange={(e) => {
+                    setRecipient(e.target.value);
+                    setRecipientName("");
+                  }}
+                  className="flex-1 bg-keylio-bg-primary border-keylio-border-primary font-mono text-sm"
+                  placeholder="0x..."
+                />
+                <ContactPickerDialog 
+                  onSelect={handleContactSelect}
+                  trigger={
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="shrink-0 border-keylio-border-primary hover:bg-keylio-bg-tertiary hover:text-keylio-teal"
+                    >
+                      <Users className="w-4 h-4" />
+                    </Button>
+                  }
+                />
               </div>
-              
-              {showContactPicker ? (
-                <div className="p-4 rounded-lg border border-keylio-border-primary bg-keylio-bg-primary">
-                  <ContactPicker 
-                    onSelect={handleContactSelect}
-                    currentAddress={recipient}
-                  />
+              {recipientName && (
+                <div className="text-xs text-keylio-teal flex items-center gap-1">
+                  <Users className="w-3 h-3" />
+                  {recipientName}
                 </div>
-              ) : (
-                <>
-                  <Input
-                    value={recipient}
-                    onChange={(e) => {
-                      setRecipient(e.target.value);
-                      setRecipientName("");
-                    }}
-                    className="bg-keylio-bg-primary border-keylio-border-primary font-mono text-sm"
-                    placeholder="0x... 或點擊上方選擇聯絡人"
-                  />
-                  {recipientName && (
-                    <div className="text-xs text-keylio-teal flex items-center gap-1">
-                      <Users className="w-3 h-3" />
-                      {recipientName}
-                    </div>
-                  )}
-                </>
               )}
             </div>
 
@@ -386,6 +425,25 @@ export function SendDialog({ fromAddress, trigger, onSuccess }: SendDialogProps)
             <div>
               <h3 className="text-lg font-medium mb-2">發送成功！</h3>
               <p className="text-sm text-gray-400">交易已廣播至網路</p>
+              {txResult && (
+                <div className="mt-3 p-3 bg-keylio-bg-tertiary rounded-lg">
+                  <p className="text-xs text-keylio-text-muted mb-1">交易 Hash</p>
+                  <p className="text-xs font-mono text-keylio-text-secondary break-all">
+                    {txResult.hash.slice(0, 20)}...{txResult.hash.slice(-10)}
+                  </p>
+                  {ACTIVE_CHAIN.explorerUrl && (
+                    <a
+                      href={`${ACTIVE_CHAIN.explorerUrl}/tx/${txResult.hash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs text-teal-400 hover:text-teal-300 mt-2"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      查看區塊瀏覽器
+                    </a>
+                  )}
+                </div>
+              )}
               {note && (
                 <p className="text-xs text-keylio-text-muted mt-2">📝 {note}</p>
               )}
