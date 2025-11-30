@@ -1,0 +1,14 @@
+# Keylio Wallet - Robots.txt
+# https://keylio.app
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://keylio.app/sitemap.xml
+
+# Disallow sensitive paths (none for SPA)
+# All content is client-rendered
+
+# Crawl-delay for politeness
+Crawl-delay: 1
