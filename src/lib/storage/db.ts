@@ -51,7 +51,9 @@ export interface Contact {
   address: string; // Unique wallet address
   name: string;
   emoji?: string;
+  label?: string; // Category label (e.g., "商家", "朋友", "交易所")
   notes?: string;
+  isFavorite?: boolean; // Whether this contact is favorited
   lastUsed?: number;
   createdAt: number;
 }
@@ -145,6 +147,73 @@ export interface BackupMetadata {
   createdAt: number;
 }
 
+// Split Bill (分帳)
+export interface SplitBill {
+  id?: number;
+  title: string; // Bill name (e.g., "週五聚餐")
+  totalAmount: string; // Total amount in token
+  token: string; // Token symbol (e.g., "USDT")
+  splitType: 'equal' | 'custom'; // Split method
+  creatorAddress: string; // Creator's wallet address
+  participants: SplitBillParticipant[]; // Participant list
+  shareCode: string; // Short code for sharing
+  status: 'active' | 'completed' | 'expired'; // Bill status
+  createdAt: number;
+  expiresAt?: number; // Optional expiration
+}
+
+export interface SplitBillParticipant {
+  address: string;
+  name?: string;
+  amount: string; // Amount to pay
+  status: 'pending' | 'paid';
+  paidAt?: number;
+  txHash?: string; // Payment transaction hash
+}
+
+// Red Envelope (紅包)
+export interface RedEnvelope {
+  id?: number;
+  type: 'fixed' | 'random'; // Fixed amount per person or random
+  totalAmount: string; // Total amount in token
+  token: string; // Token symbol (e.g., "USDT")
+  count: number; // Total number of red envelopes
+  remaining: number; // Remaining unclaimed count
+  remainingAmount: string; // Remaining amount
+  message?: string; // Greeting message
+  creatorAddress: string; // Creator's wallet address
+  shareCode: string; // Claim code
+  shareLink: string; // Share URL
+  claimedBy: RedEnvelopeClaim[]; // Claim records
+  status: 'active' | 'completed' | 'expired' | 'cancelled';
+  createdAt: number;
+  expiresAt: number; // Expiration timestamp
+}
+
+export interface RedEnvelopeClaim {
+  address: string;
+  name?: string;
+  amount: string; // Amount claimed
+  claimedAt: number;
+  txHash?: string; // Distribution transaction hash
+}
+
+// Payment Request (付款請求)
+export interface PaymentRequest {
+  id?: number;
+  amount: string; // Requested amount
+  token: string; // Token symbol (e.g., "USDT")
+  recipientAddress: string; // Who receives the payment
+  note?: string; // Payment note
+  shareLink: string; // Payment link
+  status: 'pending' | 'paid' | 'expired' | 'cancelled';
+  paidBy?: string; // Payer's address
+  paidAt?: number; // Payment timestamp
+  txHash?: string; // Payment transaction hash
+  createdAt: number;
+  expiresAt?: number; // Optional expiration
+}
+
 const db = new Dexie("KeylioWallet") as Dexie & {
   settings: EntityTable<Setting, "id">;
   sub_wallets: EntityTable<SubWallet, "id">;
@@ -156,6 +225,9 @@ const db = new Dexie("KeylioWallet") as Dexie & {
   transaction_categories: EntityTable<TransactionCategory, "id">;
   contact_tags: EntityTable<ContactTag, "id">;
   backup_metadata: EntityTable<BackupMetadata, "id">;
+  split_bills: EntityTable<SplitBill, "id">;
+  red_envelopes: EntityTable<RedEnvelope, "id">;
+  payment_requests: EntityTable<PaymentRequest, "id">;
 };
 
 // Schema definition
@@ -193,6 +265,23 @@ db.version(4).stores({
   transaction_categories: "++id, name, usageCount",
   contact_tags: "++id, name",
   backup_metadata: "++id, type, lastBackupAt",
+});
+
+// Version 5: Add social payment features (分帳、紅包、付款請求)
+db.version(5).stores({
+  settings: "++id, &key",
+  sub_wallets: "++id, address, index",
+  transactions: "++id, hash, from, to, timestamp, token, label, subWalletId",
+  contacts: "++id, &address, name, lastUsed, isFavorite",
+  user_preferences: "++id",
+  networks: "++id, chainId, isActive, isCustom",
+  tokens: "++id, [chainId+contractAddress], symbol, isActive",
+  transaction_categories: "++id, name, usageCount",
+  contact_tags: "++id, name",
+  backup_metadata: "++id, type, lastBackupAt",
+  split_bills: "++id, shareCode, creatorAddress, status, createdAt",
+  red_envelopes: "++id, shareCode, creatorAddress, status, createdAt",
+  payment_requests: "++id, recipientAddress, status, createdAt",
 });
 
 // Initialize default user preferences on first run

@@ -1,7 +1,17 @@
 import { ethers } from 'ethers';
 import * as bip39 from 'bip39';
+import { KeylioError, ErrorCode } from '../errors';
 
-// --- Mnemonic & Wallet Derivation ---
+// ========================================
+// Constants
+// ========================================
+
+/** Standard BIP44 Ethereum derivation path */
+export const DERIVATION_PATH = "m/44'/60'/0'/0" as const;
+
+// ========================================
+// Mnemonic Utilities
+// ========================================
 
 /**
  * Generates a random 12-word mnemonic using BIP39.
@@ -12,13 +22,101 @@ export const generateMnemonic = (): string => {
 };
 
 /**
+ * Validates a mnemonic phrase
+ */
+export const validateMnemonic = (mnemonic: string): boolean => {
+  return bip39.validateMnemonic(mnemonic.trim().toLowerCase());
+};
+
+/**
+ * Type guard to check if input is a valid mnemonic
+ */
+export function isValidMnemonic(input: unknown): input is string {
+  if (typeof input !== 'string') return false;
+  const words = input.trim().split(/\s+/);
+  return words.length === 12 && validateMnemonic(input);
+}
+
+// ========================================
+// HD Wallet Derivation
+// ========================================
+
+/**
  * Derives an Ethereum wallet from a mnemonic at a specific index.
  * Path: m/44'/60'/0'/0/{index}
  */
 export const deriveWallet = (mnemonic: string, index: number = 0): ethers.HDNodeWallet => {
-  // "m" ensures we get the master node, so we can derive the full path
-  const wallet = ethers.HDNodeWallet.fromPhrase(mnemonic, undefined, "m");
-  return wallet.derivePath(`m/44'/60'/0'/0/${index}`);
+  if (!validateMnemonic(mnemonic)) {
+    throw new KeylioError(ErrorCode.AUTH_INVALID_MNEMONIC);
+  }
+  
+  try {
+    // Use Mnemonic class for better compatibility
+    const mnemonicObj = ethers.Mnemonic.fromPhrase(mnemonic.trim());
+    const hdNode = ethers.HDNodeWallet.fromMnemonic(mnemonicObj, `${DERIVATION_PATH}/${index}`);
+    return hdNode;
+  } catch (error) {
+    throw new KeylioError(
+      ErrorCode.WALLET_DERIVATION_FAILED,
+      { index },
+      error instanceof Error ? error : undefined
+    );
+  }
+};
+
+/**
+ * Derives the Extended Public Key (xpub) from a mnemonic.
+ * The xpub can be used to derive addresses without exposing private keys.
+ * Safe to store (encrypted) for address derivation.
+ */
+export const deriveXpub = (mnemonic: string): string => {
+  if (!validateMnemonic(mnemonic)) {
+    throw new KeylioError(ErrorCode.AUTH_INVALID_MNEMONIC);
+  }
+  
+  try {
+    // Use Mnemonic class for better compatibility
+    const mnemonicObj = ethers.Mnemonic.fromPhrase(mnemonic.trim());
+    const hdNode = ethers.HDNodeWallet.fromMnemonic(mnemonicObj, DERIVATION_PATH);
+    return hdNode.neuter().extendedKey;
+  } catch (error) {
+    throw new KeylioError(
+      ErrorCode.WALLET_DERIVATION_FAILED,
+      { operation: 'deriveXpub' },
+      error instanceof Error ? error : undefined
+    );
+  }
+};
+
+/**
+ * Derives an address from an xpub at a specific index.
+ * This allows generating new addresses without the mnemonic.
+ */
+export const deriveAddressFromXpub = (xpub: string, index: number): string => {
+  try {
+    const node = ethers.HDNodeWallet.fromExtendedKey(xpub);
+    const childNode = node.derivePath(String(index));
+    return childNode.address;
+  } catch (error) {
+    throw new KeylioError(
+      ErrorCode.WALLET_DERIVATION_FAILED,
+      { index, operation: 'deriveAddressFromXpub' },
+      error instanceof Error ? error : undefined
+    );
+  }
+};
+
+/**
+ * Derives a wallet for signing from mnemonic at a specific index.
+ * Use this only when you need to sign transactions.
+ */
+export const deriveSigningWallet = (
+  mnemonic: string,
+  index: number,
+  provider?: ethers.Provider
+): ethers.HDNodeWallet => {
+  const wallet = deriveWallet(mnemonic, index);
+  return provider ? wallet.connect(provider) : wallet;
 };
 
 // --- Encryption & Decryption (AES-256-GCM) ---
@@ -125,24 +223,70 @@ export const decryptData = async (encryptedData: EncryptedData, password: string
     );
     return dec.decode(decryptedContent);
   } catch {
-    throw new Error("Decryption failed. Wrong password?");
+    throw new KeylioError(ErrorCode.WALLET_DECRYPTION_FAILED);
   }
 };
 
-// --- Helpers ---
+// ========================================
+// Password Storage for Passkey-based Unlock
+// ========================================
 
+/**
+ * Application-level key for encrypting user password
+ * This allows Passkey-verified users to access encrypted password
+ * The password is double-protected: requires Passkey auth + this key
+ */
+const APP_PASSWORD_KEY = 'keylio-wallet-v1-passkey-unlock';
+
+/**
+ * Encrypts user password for storage (used after Passkey verification)
+ * This is NOT the same as encrypting the mnemonic - this is for session recovery
+ */
+export const encryptPasswordForStorage = async (password: string): Promise<EncryptedData> => {
+  return encryptData(password, APP_PASSWORD_KEY);
+};
+
+/**
+ * Decrypts stored password (called after Passkey verification)
+ */
+export const decryptStoredPassword = async (encryptedData: EncryptedData): Promise<string> => {
+  return decryptData(encryptedData, APP_PASSWORD_KEY);
+};
+
+// ========================================
+// Helpers
+// ========================================
+
+/**
+ * Convert ArrayBuffer to Base64 string (works in both browser and Node.js)
+ */
 function arrayBufferToBase64(buffer: ArrayBuffer | ArrayBufferLike): string {
-  let binary = '';
   const bytes = new Uint8Array(buffer);
+  
+  // Use Buffer in Node.js environment, or manual conversion in browser
+  if (typeof Buffer !== 'undefined') {
+    return Buffer.from(bytes).toString('base64');
+  }
+  
+  let binary = '';
   const len = bytes.byteLength;
   for (let i = 0; i < len; i++) {
     binary += String.fromCharCode(bytes[i]);
   }
-  return window.btoa(binary);
+  return btoa(binary);
 }
 
+/**
+ * Convert Base64 string to ArrayBuffer (works in both browser and Node.js)
+ */
 function base64ToArrayBuffer(base64: string): ArrayBuffer {
-  const binary_string = window.atob(base64);
+  // Use Buffer in Node.js environment
+  if (typeof Buffer !== 'undefined') {
+    const buffer = Buffer.from(base64, 'base64');
+    return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+  }
+  
+  const binary_string = atob(base64);
   const len = binary_string.length;
   const bytes = new Uint8Array(len);
   for (let i = 0; i < len; i++) {
@@ -150,3 +294,9 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
   }
   return bytes.buffer;
 }
+
+// ========================================
+// Re-exports
+// ========================================
+
+export { KeylioError, ErrorCode } from '../errors';
