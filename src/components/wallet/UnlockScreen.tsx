@@ -9,8 +9,9 @@ import { Lock, ArrowRight, Fingerprint, Unlock } from "lucide-react";
 import { toast } from "sonner";
 import { useWalletStore } from "@/stores/useWalletStore";
 import db from "@/lib/storage/db";
-import { decryptData,  } from "@/lib/crypto";
+import { decryptData, decryptStoredPassword } from "@/lib/crypto";
 import { authenticatePasskey } from "@/lib/passkey";
+import { useSessionContext } from "@/components/providers/SessionProvider";
 import { useLiveQuery } from "dexie-react-hooks";
 
 import type { PasskeyMetadata } from "@/lib/storage/db";
@@ -24,8 +25,11 @@ export function UnlockScreen({ onUnlock }: UnlockScreenProps) {
   const [password, setPassword] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isShake, setIsShake] = useState(false);
+  const createSession = useWalletStore((state) => state.createSession);
   const setUnlocked = useWalletStore((state) => state.setUnlocked);
-  const setSessionPassword = useWalletStore((state) => state.setSessionPassword);
+  
+  // Use session context for state management
+  const { storeEncryptedPassword } = useSessionContext();
 
   // Fetch default Passkey with auto-update
   const defaultPasskey = useLiveQuery(async () => {
@@ -51,8 +55,9 @@ export function UnlockScreen({ onUnlock }: UnlockScreenProps) {
       // If decryption succeeds, the password is correct
       await decryptData(setting.value as EncryptedData, password);
       
-      setSessionPassword(password);
-      setUnlocked(true);
+      await createSession(password);
+      // Store encrypted password in session for sensitive operations (e.g., backup mnemonic)
+      await storeEncryptedPassword(password);
       onUnlock();
       toast.success("歡迎回來！");
     } catch (error) {
@@ -68,42 +73,46 @@ export function UnlockScreen({ onUnlock }: UnlockScreenProps) {
   const handlePasskeyUnlock = async () => {
     setIsProcessing(true);
     try {
-      // Try default Passkey first
-      let result;
-      try {
-        result = await authenticatePasskey(defaultPasskey?.credentialId);
-      } catch (defaultError) {
-        // If default Passkey fails, try without specifying (let user choose)
-        if (defaultPasskey) {
-          toast.info("預設 Passkey 無法使用，請選擇其他 Passkey");
-          result = await authenticatePasskey();
-        } else {
-          throw defaultError;
-        }
-      }
+      // Try default Passkey first, fallback to user selection
+      const result = defaultPasskey?.credentialId
+        ? await authenticatePasskey(defaultPasskey.credentialId).catch(() => {
+            toast.info("預設 Passkey 無法使用，請選擇其他");
+            return authenticatePasskey();
+          })
+        : await authenticatePasskey();
       
-      // Update last used timestamp
+      // Update last used timestamp (fire and forget)
       if (result.credentialId) {
-        const setting = await db.settings.get({ key: 'passkeys_metadata' });
-        const passkeys = (setting?.value as PasskeyMetadata[]) || [];
-        const updatedPasskeys = passkeys.map(pk => 
-          pk.credentialId === result.credentialId 
-            ? { ...pk, lastUsed: Date.now() } 
-            : pk
-        );
-        await db.settings.put({
-          id: setting?.id,
-          key: 'passkeys_metadata',
-          value: updatedPasskeys
+        db.settings.get({ key: 'passkeys_metadata' }).then(setting => {
+          const passkeys = (setting?.value as PasskeyMetadata[]) || [];
+          db.settings.put({
+            id: setting?.id,
+            key: 'passkeys_metadata',
+            value: passkeys.map(pk => 
+              pk.credentialId === result.credentialId 
+                ? { ...pk, lastUsed: Date.now() } 
+                : pk
+            )
+          });
         });
       }
       
+      // Get encrypted password from IndexedDB and create full session
+      const encryptedPwdSetting = await db.settings.get({ key: 'encrypted_password' });
+      if (encryptedPwdSetting) {
+        // Decrypt the stored password using app-level key
+        const encryptedData = encryptedPwdSetting.value as EncryptedData;
+        const pwd = await decryptStoredPassword(encryptedData);
+        await createSession(pwd);
+        await storeEncryptedPassword(pwd);
+      }
+      
       setUnlocked(true);
+      toast.success("驗證成功");
       onUnlock();
-      toast.success("Passkey 驗證成功");
     } catch (error) {
-      console.error(error);
-      toast.error("Passkey 驗證失敗，請使用密碼登入");
+      console.error("Passkey unlock failed:", error);
+      toast.error("驗證失敗，請使用密碼登入");
     } finally {
       setIsProcessing(false);
     }
@@ -189,6 +198,8 @@ export function UnlockScreen({ onUnlock }: UnlockScreenProps) {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleUnlock()}
+                  autoComplete="off"
+                  data-form-type="other"
                   className="bg-keylio-bg-primary/50 border-keylio-border-primary focus:border-teal-500/50 focus:ring-1 focus:ring-teal-500/50 text-center text-lg tracking-widest h-12 rounded-xl transition-all placeholder:tracking-normal placeholder:text-sm placeholder:text-gray-500"
                 />
               </div>

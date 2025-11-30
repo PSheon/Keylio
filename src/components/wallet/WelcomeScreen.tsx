@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { generateMnemonic } from "@/lib/crypto";
 import { useWalletStore } from "@/stores/useWalletStore";
@@ -10,20 +10,20 @@ interface WelcomeScreenProps {
 }
 
 export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
-  const setTempMnemonic = useWalletStore((state) => state.setTempMnemonic);
+  const mnemonicGenerated = useRef(false);
 
   useEffect(() => {
-    // Generate mnemonic in background
-    const mnemonic = generateMnemonic();
-    setTempMnemonic(mnemonic);
+    // Generate mnemonic only once (avoid regenerating on re-mount)
+    if (!mnemonicGenerated.current) {
+      mnemonicGenerated.current = true;
+      const mnemonic = generateMnemonic();
+      useWalletStore.getState().setTempMnemonic(mnemonic);
+    }
 
-    // Wait for 3.5 seconds then transition (slightly longer for animation)
-    const timer = setTimeout(() => {
-      onComplete();
-    }, 3500);
-
+    // Always set up timer for transition
+    const timer = setTimeout(onComplete, 3500);
     return () => clearTimeout(timer);
-  }, [setTempMnemonic, onComplete]);
+  }, [onComplete]);
 
   return (
     <div className="relative flex flex-col items-center justify-center min-h-screen bg-[#050505] text-white overflow-hidden">
@@ -50,7 +50,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
           {/* Glow Effect */}
           <div className="absolute inset-0 bg-teal-500/30 rounded-full blur-xl animate-pulse" />
           
-          <div className="relative w-full h-full rounded-2xl bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center shadow-2xl shadow-teal-500/40 border border-teal-300/20 backdrop-blur-sm">
+          <div className="relative w-full h-full rounded-2xl bg-linear-to-br from-teal-400 to-teal-600 flex items-center justify-center shadow-2xl shadow-teal-500/40 border border-teal-300/20 backdrop-blur-sm">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
@@ -70,7 +70,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
 
         {/* Text Reveal */}
         <motion.h1 
-          className="text-5xl md:text-6xl font-bold mb-4 tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white via-teal-200 to-teal-400"
+          className="text-5xl md:text-6xl font-bold mb-4 tracking-tighter bg-clip-text text-transparent bg-linear-to-r from-white via-teal-200 to-teal-400"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.8 }}
@@ -92,7 +92,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
           initial={{ opacity: 0, width: 0 }}
           animate={{ opacity: 1, width: "100%" }}
           transition={{ delay: 1, duration: 2 }}
-          className="h-0.5 bg-gradient-to-r from-transparent via-teal-500 to-transparent w-48 mx-auto opacity-50"
+          className="h-0.5 bg-linear-to-r from-transparent via-teal-500 to-transparent w-48 mx-auto opacity-50"
         />
 
         <motion.div
