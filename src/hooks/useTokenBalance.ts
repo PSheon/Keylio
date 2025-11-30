@@ -1,34 +1,36 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { ethers } from "ethers";
-import { useProvider } from "./usePlasma";
-import { ERC20_ABI, getTokenBySymbol, formatTokenAmount } from "@/lib/tokens";
+import { withRetry } from "@/lib/chain";
+import { ERC20_ABI, formatTokenAmount } from "@/lib/tokens";
+import { logError } from "@/lib/errors";
 
 /**
- * Hook to fetch ERC-20 token balance
+ * Hook to fetch ERC-20 token balance with retry logic
  */
 export const useTokenBalance = (
   tokenAddress: string | undefined,
   walletAddress: string | undefined
 ) => {
-  const provider = useProvider();
-
   return useQuery({
     queryKey: ["tokenBalance", tokenAddress, walletAddress],
     queryFn: async () => {
       if (!tokenAddress || !walletAddress) return BigInt(0);
 
-      // Native ETH balance
-      if (tokenAddress === "0x0000000000000000000000000000000000000000") {
-        return await provider.getBalance(walletAddress);
-      }
+      return withRetry(async (provider) => {
+        // Native ETH balance
+        if (tokenAddress === ethers.ZeroAddress) {
+          return provider.getBalance(walletAddress);
+        }
 
-      // ERC-20 token balance
-      const contract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
-      const balance = await contract.balanceOf(walletAddress);
-      return balance;
+        // ERC-20 token balance
+        const contract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+        return contract.balanceOf(walletAddress);
+      });
     },
     enabled: !!tokenAddress && !!walletAddress,
-    refetchInterval: 10000, // Poll every 10 seconds
+    refetchInterval: 15000,
+    staleTime: 10000,
+    retry: 3,
   });
 };
 
@@ -39,39 +41,41 @@ export const useMultiTokenBalance = (
   tokens: string[],
   walletAddress: string | undefined
 ) => {
-  const provider = useProvider();
-
   return useQuery({
     queryKey: ["multiTokenBalance", tokens, walletAddress],
     queryFn: async () => {
       if (!walletAddress || tokens.length === 0) return {};
 
-      const balances: Record<string, bigint> = {};
+      return withRetry(async (provider) => {
+        const balances: Record<string, bigint> = {};
 
-      await Promise.all(
-        tokens.map(async (tokenAddress) => {
-          try {
-            if (tokenAddress === "0x0000000000000000000000000000000000000000") {
-              balances[tokenAddress] = await provider.getBalance(walletAddress);
-            } else {
-              const contract = new ethers.Contract(
-                tokenAddress,
-                ERC20_ABI,
-                provider
-              );
-              balances[tokenAddress] = await contract.balanceOf(walletAddress);
+        await Promise.all(
+          tokens.map(async (tokenAddress) => {
+            try {
+              if (tokenAddress === ethers.ZeroAddress) {
+                balances[tokenAddress] = await provider.getBalance(walletAddress);
+              } else {
+                const contract = new ethers.Contract(
+                  tokenAddress,
+                  ERC20_ABI,
+                  provider
+                );
+                balances[tokenAddress] = await contract.balanceOf(walletAddress);
+              }
+            } catch (error) {
+              logError(error, { tokenAddress, walletAddress });
+              balances[tokenAddress] = BigInt(0);
             }
-          } catch (error) {
-            console.error(`Error fetching balance for ${tokenAddress}:`, error);
-            balances[tokenAddress] = BigInt(0);
-          }
-        })
-      );
+          })
+        );
 
-      return balances;
+        return balances;
+      });
     },
     enabled: !!walletAddress && tokens.length > 0,
-    refetchInterval: 10000,
+    refetchInterval: 15000,
+    staleTime: 10000,
+    retry: 2,
   });
 };
 
