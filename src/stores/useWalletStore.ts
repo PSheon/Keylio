@@ -1,11 +1,35 @@
+/**
+ * Keylio Wallet - Wallet Store
+ *
+ * Manages wallet state including:
+ * - Unlock status
+ * - Sub-wallets list
+ * - Active wallet selection
+ * - Session management integration
+ *
+ * @example
+ * ```tsx
+ * // Using pre-built selector hook (recommended)
+ * import { useActiveWallet } from '@/hooks';
+ * const { activeWallet, wallets } = useActiveWallet();
+ *
+ * // Direct store access
+ * const isUnlocked = useWalletStore((state) => state.isUnlocked);
+ * ```
+ */
+
 import { create } from 'zustand';
 import { sessionManager } from '@/lib/session';
 import { type SubWallet } from '@/lib/storage/db';
 
-// App view state type
-type AppView = 'loading' | 'welcome' | 'philosophy' | 'setup' | 'unlock' | 'dashboard';
+// ========================================
+// Types
+// ========================================
 
-interface WalletState {
+/** Application view states */
+export type AppView = 'loading' | 'welcome' | 'philosophy' | 'setup' | 'unlock' | 'dashboard';
+
+export interface WalletState {
   isUnlocked: boolean;
   wallets: SubWallet[];
   activeWalletId: number | null;
@@ -79,10 +103,38 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   },
 }));
 
-// Configure session manager to auto-lock wallet when session expires
+// ========================================
+// Session Manager Configuration
+// ========================================
+
+/**
+ * Configure session manager to auto-lock wallet when session expires.
+ * This runs once when the module is loaded.
+ */
 sessionManager.configure({
   autoLockMinutes: 15, // 15 minutes default
   onSessionExpired: () => {
     useWalletStore.getState().destroySession();
   },
 });
+
+// ========================================
+// Selectors
+// ========================================
+
+/** Select unlock status */
+export const selectIsUnlocked = (state: WalletState) => state.isUnlocked;
+
+/** Select all wallets */
+export const selectWallets = (state: WalletState) => state.wallets;
+
+/** Select active wallet ID */
+export const selectActiveWalletId = (state: WalletState) => state.activeWalletId;
+
+/** Select current view override */
+export const selectViewOverride = (state: WalletState) => state.viewOverride;
+
+/** Select active wallet object */
+export const selectActiveWallet = (state: WalletState) => {
+  return state.wallets.find((w) => w.id === state.activeWalletId) || null;
+};
