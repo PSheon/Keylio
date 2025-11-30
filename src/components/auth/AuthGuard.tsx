@@ -2,9 +2,11 @@
 
 import { useEffect, useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
+import { usePathname } from "next/navigation";
 import { useRouterContext } from "@/components/providers/RouterProvider";
 import { LoadingScreen } from "@/components/wallet/LoadingScreen";
 import db from "@/lib/storage/db";
+import { useRedirectStore } from "@/stores/useRedirectStore";
 import { useWalletStore } from "@/stores/useWalletStore";
 
 interface AuthGuardProps {
@@ -19,10 +21,13 @@ interface AuthGuardProps {
  * 2. 檢查是否已解鎖
  *
  * 如果未解鎖或沒有錢包，自動導向首頁（首頁會處理解鎖流程）
+ * 同時記錄原始 URL，驗證成功後自動返回
  */
 export function AuthGuard({ children }: AuthGuardProps) {
   const { navigateTo } = useRouterContext();
+  const pathname = usePathname();
   const isUnlocked = useWalletStore((state) => state.isUnlocked);
+  const setRedirectUrl = useRedirectStore((state) => state.setRedirectUrl);
 
   // Check if wallet exists
   const subWallets = useLiveQuery(() => db.sub_wallets.toArray());
@@ -51,9 +56,13 @@ export function AuthGuard({ children }: AuthGuardProps) {
   // Redirect to home if not authenticated
   useEffect(() => {
     if (authState === "no-wallet" || authState === "locked") {
+      // 記錄當前頁面 URL，驗證成功後返回
+      if (pathname && pathname !== "/") {
+        setRedirectUrl(pathname);
+      }
       navigateTo("/", { replace: true });
     }
-  }, [authState, navigateTo]);
+  }, [authState, navigateTo, pathname, setRedirectUrl]);
 
   // Show loading while checking auth
   if (authState === "loading") {
