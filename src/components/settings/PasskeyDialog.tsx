@@ -52,7 +52,7 @@ function PasskeyDialogComponent({ open, onOpenChange }: PasskeyDialogProps) {
   const resetDialog = useCallback(() => {
     setIsUnlocked(false);
     setNewPasskeyName("");
-    passkeyEditor.resetEditing();
+    passkeyEditor.cancelEditing();
   }, [passkeyEditor]);
 
   const handleOpenChange = useCallback(
@@ -94,7 +94,7 @@ function PasskeyDialogComponent({ open, onOpenChange }: PasskeyDialogProps) {
         passkeyEditor.editingName
       );
       if (success) {
-        passkeyEditor.resetEditing();
+        passkeyEditor.cancelEditing();
       }
     },
     [passkeyManager, passkeyEditor]
