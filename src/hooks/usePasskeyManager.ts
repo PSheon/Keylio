@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { toast } from 'sonner';
 import { registerPasskey, detectDeviceName } from '@/lib/passkey';
 import db, { type PasskeyMetadata } from '@/lib/storage/db';
+import { showSuccess, showError } from '@/lib/toast';
 
 const PASSKEY_MESSAGES = {
   ALREADY_EXISTS: '此設備已加入',
@@ -34,7 +34,7 @@ export function usePasskeyManager() {
 
   const addPasskey = async (customName?: string, existingCredentialIds?: string[]) => {
     if (isProcessing) {
-      toast.error(PASSKEY_MESSAGES.WAIT_CURRENT);
+      showError(PASSKEY_MESSAGES.WAIT_CURRENT);
       return null;
     }
 
@@ -49,7 +49,7 @@ export function usePasskeyManager() {
       ];
 
       if (allCredentialIds.includes(result.credentialId)) {
-        toast.error(PASSKEY_MESSAGES.ALREADY_EXISTS);
+        showError(PASSKEY_MESSAGES.ALREADY_EXISTS);
         return null;
       }
 
@@ -67,20 +67,23 @@ export function usePasskeyManager() {
       const updatedPasskeys = [...existingPasskeys, newPasskey];
       await savePasskeysToDB(updatedPasskeys, settingId);
 
-      toast.success(`Passkey "${newPasskey.name}" 新增成功${isFirstPasskey ? ' (已設為預設)' : ''}`);
+      showSuccess(
+        "Passkey 新增成功",
+        `${newPasskey.name}${isFirstPasskey ? ' 已設為預設' : ''}`
+      );
 
       return newPasskey;
     } catch (error) {
       if (error instanceof Error) {
         if (error.name === 'NotAllowedError') {
-          toast.error(PASSKEY_MESSAGES.CANCELLED);
+          showError(PASSKEY_MESSAGES.CANCELLED);
         } else if (error.name === 'InvalidStateError') {
-          toast.error(PASSKEY_MESSAGES.ALREADY_EXISTS);
+          showError(PASSKEY_MESSAGES.ALREADY_EXISTS);
         } else {
-          toast.error(`Passkey 註冊失敗: ${error.message}`);
+          showError("Passkey 註冊失敗", error.message);
         }
       } else {
-        toast.error('Passkey 註冊失敗');
+        showError("Passkey 註冊失敗");
       }
       return null;
     } finally {
@@ -93,26 +96,26 @@ export function usePasskeyManager() {
     const passkeyToRemove = passkeys.find(p => p.id === id);
 
     if (passkeyToRemove?.isDefault) {
-      toast.error(PASSKEY_MESSAGES.CANNOT_DELETE_DEFAULT);
+      showError("無法刪除預設 Passkey", "請先設定其他 Passkey 為預設");
       return false;
     }
 
     if (passkeys.length <= 1) {
-      toast.error(PASSKEY_MESSAGES.MINIMUM_ONE);
+      showError("無法刪除", PASSKEY_MESSAGES.MINIMUM_ONE);
       return false;
     }
 
     const updatedPasskeys = passkeys.filter(p => p.id !== id);
     await savePasskeysToDB(updatedPasskeys, settingId);
 
-    toast.success(`Passkey "${passkeyToRemove?.name}" 已移除`);
+    showSuccess("Passkey 已移除", passkeyToRemove?.name);
     return true;
   };
 
   const updatePasskeyName = async (id: string, newName: string, existingNames?: string[]) => {
     const trimmedName = newName.trim();
     if (!trimmedName) {
-      toast.error(PASSKEY_MESSAGES.EMPTY_NAME);
+      showError(PASSKEY_MESSAGES.EMPTY_NAME);
       return false;
     }
 
@@ -120,7 +123,7 @@ export function usePasskeyManager() {
 
     const allNames = [...passkeys.map(p => p.name), ...(existingNames || [])];
     if (allNames.some(name => name === trimmedName && passkeys.find(p => p.name === name)?.id !== id)) {
-      toast.error(PASSKEY_MESSAGES.NAME_EXISTS);
+      showError(PASSKEY_MESSAGES.NAME_EXISTS);
       return false;
     }
 
@@ -129,7 +132,7 @@ export function usePasskeyManager() {
     );
 
     await savePasskeysToDB(updatedPasskeys, settingId);
-    toast.success("Passkey 名稱已更新");
+    showSuccess("Passkey 名稱已更新");
     return true;
   };
 
@@ -143,7 +146,7 @@ export function usePasskeyManager() {
     await savePasskeysToDB(updatedPasskeys, settingId);
 
     const passkeyName = passkeys.find(p => p.id === id)?.name;
-    toast.success(`已將 "${passkeyName}" 設為預設 Passkey`);
+    showSuccess("預設 Passkey 已更新", passkeyName);
     return true;
   };
 
