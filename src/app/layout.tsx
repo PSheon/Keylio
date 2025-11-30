@@ -54,7 +54,7 @@ export default async function RootLayout({
               <SessionProvider>
                 <SessionInitializer />
                 {children}
-                <Toaster richColors position="top-center" />
+                <Toaster richColors position="bottom-center" />
               </SessionProvider>
             </RouterProvider>
           </ThemeProvider>
