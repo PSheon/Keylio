@@ -133,7 +133,7 @@ export default async function RootLayout({
               <SessionProvider>
                 <SessionInitializer />
                 {children}
-                <Toaster richColors position="bottom-center" />
+                <Toaster richColors position="bottom-right" />
               </SessionProvider>
             </RouterProvider>
           </ThemeProvider>
