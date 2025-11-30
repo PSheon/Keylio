@@ -28,7 +28,7 @@ type PercentageOption = typeof PERCENTAGE_OPTIONS[number];
 
 /**
  * Step 2: 幣種 + 金額 + 備註
- * 優化: 
+ * 優化:
  * - 自動選取有餘額的幣種（原生幣 > USDT > USDC）
  * - 快速金額改為百分比選擇
  */
@@ -38,7 +38,7 @@ function AmountStepComponent({ data, fromAddress, onUpdate, onNext, onBack, onRe
   const tokens = useMemo(() => getAllTokens(), []);
   const tokenAddresses = useMemo(() => tokens.map(t => t.address), [tokens]);
   const nativeToken = useMemo(() => getNativeToken(), []);
-  
+
   // 一次性取得所有 token 餘額
   const { data: balances, isLoading: isLoadingBalances } = useMultiTokenBalance(tokenAddresses, fromAddress);
 
@@ -66,20 +66,20 @@ function AmountStepComponent({ data, fromAddress, onUpdate, onNext, onBack, onRe
   // 自動選取有餘額的幣種（原生幣 > USDT > USDC）
   useEffect(() => {
     if (isLoadingBalances || !balances) return;
-    
+
     // 如果當前選中的幣種有餘額，不需要改變
     if (tokenBalances[data.token]?.hasBalance) return;
-    
+
     // 按優先順序選取：原生幣 > USDT > USDC
     const priorityOrder = [nativeToken.symbol, 'USDT', 'USDC'];
-    
+
     for (const symbol of priorityOrder) {
       if (tokenBalances[symbol]?.hasBalance) {
         onUpdate({ token: symbol, amount: "" });
         return;
       }
     }
-    
+
     // 如果以上都沒有餘額，選第一個有餘額的
     const firstWithBalance = tokensWithBalance[0];
     if (firstWithBalance) {
@@ -100,8 +100,8 @@ function AmountStepComponent({ data, fromAddress, onUpdate, onNext, onBack, onRe
     ? getTokenValueUSD(data.amount || "0", currentToken.symbol)
     : 0;
 
-  const canProceed = 
-    parseFloat(data.amount) > 0 && 
+  const canProceed =
+    parseFloat(data.amount) > 0 &&
     parseFloat(data.amount) <= numericBalance;
 
   // 處理百分比選擇
@@ -180,7 +180,7 @@ function AmountStepComponent({ data, fromAddress, onUpdate, onNext, onBack, onRe
               const balance = tokenBalances[token.symbol];
               const isSelected = data.token === token.symbol;
               const hasBalance = balance?.hasBalance;
-              
+
               return (
                 <button
                   key={token.symbol}
@@ -188,8 +188,8 @@ function AmountStepComponent({ data, fromAddress, onUpdate, onNext, onBack, onRe
                   disabled={!hasBalance}
                   className={cn(
                     "w-full flex items-center gap-3 p-3 rounded-lg transition-all text-left",
-                    isSelected 
-                      ? "bg-keylio-teal/10 border border-keylio-teal" 
+                    isSelected
+                      ? "bg-keylio-teal/10 border border-keylio-teal"
                       : hasBalance
                         ? "hover:bg-keylio-bg-tertiary"
                         : "opacity-40 cursor-not-allowed"
@@ -218,11 +218,9 @@ function AmountStepComponent({ data, fromAddress, onUpdate, onNext, onBack, onRe
                     )}>
                       {parseFloat(balance?.formatted || "0").toFixed(4)}
                     </p>
-                    {hasBalance && (
-                      <p className="text-xs text-keylio-text-muted">
+                    {hasBalance ? <p className="text-xs text-keylio-text-muted">
                         {formatUSD(getTokenValueUSD(balance.formatted, token.symbol))}
-                      </p>
-                    )}
+                      </p> : null}
                   </div>
                 </button>
               );

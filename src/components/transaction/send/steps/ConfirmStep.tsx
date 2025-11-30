@@ -3,11 +3,11 @@
 import { memo, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, AlertTriangle, Fingerprint, Wallet } from "lucide-react";
+import { AuthDialog } from "@/components/auth";
 import { Button } from "@/components/ui/button";
 import { TokenIcon } from "@/components/ui/token-icon";
 import { formatUSD } from "@/lib/formatters";
 import { getTokenValueUSD } from "@/lib/tokens";
-import { AuthDialog } from "@/components/auth";
 import type { SendFormData } from "../types";
 
 interface ConfirmStepProps {

@@ -27,9 +27,10 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
+import { TokenIcon } from "@/components/ui/token-icon";
 import { fadeInUp, stepTransition, fadeIn } from "@/lib/animations";
+import { formatUSD } from "@/lib/formatters";
 import { showSuccess, showError } from "@/lib/toast";
-import { formatUSD } from "@/lib/tokens";
 import { useWalletStore } from "@/stores/useWalletStore";
 
 interface SwapDialogProps {
@@ -41,8 +42,8 @@ type SwapStep = 'input' | 'preview' | 'processing' | 'success';
 
 // Supported swap pairs - Spec: USDT ↔ USDC
 const SWAP_TOKENS = [
-  { symbol: 'USDT', name: 'Tether USD', icon: '💵', balance: 1000 },
-  { symbol: 'USDC', name: 'USD Coin', icon: '💎', balance: 500 },
+  { symbol: 'USDT', name: 'Tether USD', balance: 1000 },
+  { symbol: 'USDC', name: 'USD Coin', balance: 500 },
 ];
 
 // Mock exchange rate (in production, fetch from DEX/API)
@@ -202,7 +203,7 @@ function SwapDialogComponent({ trigger, onSuccess }: SwapDialogProps) {
                       {SWAP_TOKENS.filter(t => t.symbol !== toToken).map(token => (
                         <SelectItem key={token.symbol} value={token.symbol}>
                           <span className="flex items-center gap-2">
-                            <span>{token.icon}</span>
+                            <TokenIcon symbol={token.symbol} size="20px" />
                             <span>{token.symbol}</span>
                           </span>
                         </SelectItem>
@@ -257,7 +258,7 @@ function SwapDialogComponent({ trigger, onSuccess }: SwapDialogProps) {
                       {SWAP_TOKENS.filter(t => t.symbol !== fromToken).map(token => (
                         <SelectItem key={token.symbol} value={token.symbol}>
                           <span className="flex items-center gap-2">
-                            <span>{token.icon}</span>
+                            <TokenIcon symbol={token.symbol} size="20px" />
                             <span>{token.symbol}</span>
                           </span>
                         </SelectItem>

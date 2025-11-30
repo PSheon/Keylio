@@ -11,10 +11,10 @@ import { sendTransactionWithSession, validateTransaction } from "@/lib/transacti
 import { useWalletStore } from "@/stores/useWalletStore";
 import { SendingAnimation } from "./SendingAnimation";
 import { StepIndicator } from "./StepIndicator";
-import { SuccessAnimation } from "./SuccessAnimation";
 import { AmountStep } from "./steps/AmountStep";
 import { ConfirmStep } from "./steps/ConfirmStep";
 import { RecipientStep } from "./steps/RecipientStep";
+import { SuccessAnimation } from "./SuccessAnimation";
 import type { SendStep, SendFormData, SendResult } from "./types";
 
 interface SendDialogProps {
