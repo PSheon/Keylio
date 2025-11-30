@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import { useLiveQuery } from "dexie-react-hooks";
 import { usePathname } from "next/navigation";
+import { useLiveQuery } from "dexie-react-hooks";
 import { useRouterContext } from "@/components/providers/RouterProvider";
 import { LoadingScreen } from "@/components/wallet/LoadingScreen";
 import db from "@/lib/storage/db";
@@ -20,7 +20,11 @@ interface AuthGuardProps {
  * 1. 檢查是否有錢包
  * 2. 檢查是否已解鎖
  *
- * 如果未解鎖或沒有錢包，自動導向首頁（首頁會處理解鎖流程）
+ * 路由分發：
+ * - 無錢包 → /onboarding
+ * - 有錢包但未解鎖 → /unlock
+ * - 已解鎖 → 顯示請求的頁面
+ *
  * 同時記錄原始 URL，驗證成功後自動返回
  */
 export function AuthGuard({ children }: AuthGuardProps) {
@@ -39,7 +43,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
       return "loading";
     }
 
-    // No wallet exists - redirect to setup
+    // No wallet exists - redirect to onboarding
     if (subWallets.length === 0) {
       return "no-wallet";
     }
@@ -53,14 +57,18 @@ export function AuthGuard({ children }: AuthGuardProps) {
     return "authenticated";
   }, [subWallets, isUnlocked]);
 
-  // Redirect to home if not authenticated
+  // Redirect based on auth state
   useEffect(() => {
-    if (authState === "no-wallet" || authState === "locked") {
+    if (authState === "no-wallet") {
+      // 無錢包 → onboarding
+      navigateTo("/onboarding", { replace: true });
+    } else if (authState === "locked") {
       // 記錄當前頁面 URL，驗證成功後返回
-      if (pathname && pathname !== "/") {
+      if (pathname && pathname !== "/" && pathname !== "/unlock") {
         setRedirectUrl(pathname);
       }
-      navigateTo("/", { replace: true });
+      // 有錢包但未解鎖 → unlock
+      navigateTo("/unlock", { replace: true });
     }
   }, [authState, navigateTo, pathname, setRedirectUrl]);
 

@@ -29,12 +29,16 @@ import { type SubWallet } from '@/lib/storage/db';
 /** Application view states */
 export type AppView = 'loading' | 'welcome' | 'philosophy' | 'setup' | 'unlock' | 'dashboard';
 
+/** Onboarding step states */
+export type OnboardingStep = 'philosophy' | 'setup';
+
 export interface WalletState {
   isUnlocked: boolean;
   wallets: SubWallet[];
   activeWalletId: number | null;
   tempMnemonic: string | null;
   viewOverride: AppView | null; // For manual view navigation
+  onboardingStep: OnboardingStep; // Current step in onboarding flow
 
   // Actions
   setUnlocked: (unlocked: boolean) => void;
@@ -45,6 +49,7 @@ export interface WalletState {
   clearTempMnemonic: () => void;
   getCurrentWallet: () => SubWallet | null;
   setViewOverride: (view: AppView | null) => void;
+  setOnboardingStep: (step: OnboardingStep) => void;
 
   // Session management
   createSession: (password: string) => Promise<void>;
@@ -58,6 +63,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   activeWalletId: null,
   tempMnemonic: null,
   viewOverride: null,
+  onboardingStep: 'philosophy',
 
   setUnlocked: (unlocked) => set({ isUnlocked: unlocked }),
 
@@ -76,6 +82,7 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   setTempMnemonic: (mnemonic) => set({ tempMnemonic: mnemonic }),
   clearTempMnemonic: () => set({ tempMnemonic: null }),
   setViewOverride: (view) => set({ viewOverride: view }),
+  setOnboardingStep: (step) => set({ onboardingStep: step }),
 
   // Get the current active wallet
   getCurrentWallet: () => {
@@ -93,8 +100,8 @@ export const useWalletStore = create<WalletState>((set, get) => ({
   destroySession: () => {
     // Pass notify=false to prevent circular callback
     sessionManager.destroy(false);
-    // Reset view override so it goes back to unlock screen
-    set({ isUnlocked: false, tempMnemonic: null, viewOverride: null });
+    // Reset view override and onboarding step so it goes back to unlock screen
+    set({ isUnlocked: false, tempMnemonic: null, viewOverride: null, onboardingStep: 'philosophy' });
   },
 
   // Check if the session is still active

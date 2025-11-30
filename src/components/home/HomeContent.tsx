@@ -1,107 +1,78 @@
 "use client";
 
-import { useEffect, useRef, useMemo, useCallback } from "react";
+import { useEffect, useRef } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useRouterContext } from "@/components/providers/RouterProvider";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { DashboardLayout } from "@/components/wallet/DashboardLayout";
 import { LoadingScreen } from "@/components/wallet/LoadingScreen";
-import { PhilosophyScreen } from "@/components/wallet/PhilosophyScreen";
 import { PortfolioHome } from "@/components/wallet/PortfolioHome";
-import { UnlockScreen } from "@/components/wallet/UnlockScreen";
-import { WalletSetupWizard } from "@/components/wallet/WalletSetupWizard";
 import { useBeforeUnload } from "@/hooks/useBeforeUnload";
 import db from "@/lib/storage/db";
-import { useRedirectStore } from "@/stores/useRedirectStore";
 import { useWalletStore } from "@/stores/useWalletStore";
-
-// Flow per Spec Phase 1:
-// philosophy (brand message) → setup (intro + password + passkey) → dashboard
-type AppView = 'loading' | 'philosophy' | 'setup' | 'unlock' | 'dashboard';
 
 /**
  * 首頁內容元件 - Client Component
  *
  * 負責：
- * 1. 錢包狀態檢查
- * 2. 根據狀態渲染不同畫面（philosophy/setup/unlock/dashboard）
+ * 1. 根據錢包狀態進行路由分發
+ *    - 無錢包 → /onboarding
+ *    - 有錢包但未解鎖 → /unlock
+ *    - 已解鎖 → Dashboard
+ * 2. 渲染 Dashboard 內容
  */
 export function HomeContent() {
-  const viewOverride = useWalletStore((state) => state.viewOverride);
-  const setViewOverride = useWalletStore((state) => state.setViewOverride);
+  const { navigateTo } = useRouterContext();
   const initialized = useRef(false);
 
   const setWallets = useWalletStore((state) => state.setWallets);
   const isUnlocked = useWalletStore((state) => state.isUnlocked);
 
-  // 當用戶已解鎖錢包時，防止意外重整頁面
-  useBeforeUnload({ enabled: isUnlocked });
-
-  // Check if wallet exists
+  // 檢查是否有錢包
   const subWallets = useLiveQuery(() => db.sub_wallets.toArray());
 
-  // Compute initial view based on wallet state (no setState in effect)
-  const computedInitialView = useMemo<AppView | null>(() => {
-    if (subWallets === undefined) return null; // Still loading
-    if (subWallets.length === 0) return 'philosophy';
-    return isUnlocked ? 'dashboard' : 'unlock';
-  }, [subWallets, isUnlocked]);
+  // 防止意外重整頁面（已解鎖時）
+  useBeforeUnload({ enabled: isUnlocked });
 
-  // Initialize wallets ONCE (no setState for view)
+  // 路由分發邏輯
   useEffect(() => {
-    if (initialized.current || computedInitialView === null) return;
+    if (subWallets === undefined) return; // 還在載入
 
-    initialized.current = true;
+    // 沒有錢包 → onboarding
+    if (subWallets.length === 0) {
+      navigateTo("/onboarding", { replace: true });
+      return;
+    }
 
-    // Load wallets if they exist
-    if (subWallets && subWallets.length > 0) {
+    // 載入錢包到 store（只執行一次）
+    if (!initialized.current) {
+      initialized.current = true;
       setWallets(subWallets);
     }
-  }, [computedInitialView, subWallets, setWallets]);
 
-  // Use computed view if not yet initialized, otherwise use override from store
-  const currentView = viewOverride ?? (subWallets === undefined ? 'loading' : computedInitialView ?? 'loading');
-
-  // Get redirect store actions
-  const consumeRedirectUrl = useRedirectStore((state) => state.consumeRedirectUrl);
-  const { navigateTo } = useRouterContext();
-
-  // View transition handler
-  const setView = useCallback((newView: AppView) => {
-    setViewOverride(newView);
-  }, [setViewOverride]);
-
-  // Handler for successful unlock - check for redirect URL
-  const handleUnlockSuccess = useCallback(() => {
-    const redirectUrl = consumeRedirectUrl();
-    if (redirectUrl && redirectUrl !== '/') {
-      // Navigate to the saved URL
-      navigateTo(redirectUrl);
-    } else {
-      // Default: show dashboard
-      setView('dashboard');
+    // 有錢包但未解鎖 → unlock
+    if (!isUnlocked) {
+      navigateTo("/unlock", { replace: true });
+      return;
     }
-  }, [consumeRedirectUrl, navigateTo, setView]);
+  }, [subWallets, isUnlocked, navigateTo, setWallets]);
 
-  // Simple view rendering per Spec Phase 1 flow
-  switch (currentView) {
-    case 'loading':
-      return <LoadingScreen />;
-    case 'philosophy':
-      // Step 1 (Spec): Philosophy/Brand message page
-      return <PhilosophyScreen onStart={() => setView('setup')} />;
-    case 'setup':
-      // Step 2-4 (Spec): Intro + Password setup + PassKey setup (now combined in wizard)
-      return <WalletSetupWizard onComplete={() => setView('dashboard')} />;
-    case 'unlock':
-      return <UnlockScreen onUnlock={handleUnlockSuccess} />;
-    case 'dashboard':
-      return (
-        <DashboardLayout>
-          <ErrorBoundary>
-            <PortfolioHome />
-          </ErrorBoundary>
-        </DashboardLayout>
-      );
+  // 載入中
+  if (subWallets === undefined) {
+    return <LoadingScreen />;
   }
+
+  // 等待重導向
+  if (subWallets.length === 0 || !isUnlocked) {
+    return <LoadingScreen />;
+  }
+
+  // 已解鎖：顯示 Dashboard
+  return (
+    <DashboardLayout>
+      <ErrorBoundary>
+        <PortfolioHome />
+      </ErrorBoundary>
+    </DashboardLayout>
+  );
 }
