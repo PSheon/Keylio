@@ -5,24 +5,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { cva, type VariantProps } from "class-variance-authority"
 import { XIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
-
-// ============================================================================
-// Dialog Design Tokens
-// ============================================================================
-const DIALOG_TOKENS = {
-  overlay: {
-    base: "bg-black/60 backdrop-blur-sm",
-  },
-  content: {
-    bg: "bg-keylio-bg-secondary",
-    border: "border-keylio-border",
-    text: "text-keylio-text-primary",
-  },
-  close: {
-    bg: "bg-keylio-bg-tertiary hover:bg-keylio-bg-tertiary/80",
-    text: "text-keylio-text-secondary hover:text-keylio-text-primary",
-  },
-} as const
+import { DIALOG_TOKENS } from "./tokens"
 
 // ============================================================================
 // Size Variants for DialogContent
@@ -253,6 +236,7 @@ export {
   DialogTrigger,
   // Types
   type DialogContentProps,
-  // Tokens for external use
-  DIALOG_TOKENS,
 }
+
+// Re-export tokens for backward compatibility
+export { DIALOG_TOKENS } from "./tokens"

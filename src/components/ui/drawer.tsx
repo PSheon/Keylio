@@ -3,23 +3,7 @@
 import * as React from "react";
 import { Drawer as DrawerPrimitive } from "vaul";
 import { cn } from "@/lib/utils";
-
-// ============================================================================
-// Drawer Design Tokens
-// ============================================================================
-const DRAWER_TOKENS = {
-  overlay: {
-    base: "bg-black/60 backdrop-blur-sm",
-  },
-  content: {
-    bg: "bg-keylio-bg-secondary",
-    border: "border-keylio-border",
-    text: "text-keylio-text-primary",
-  },
-  handle: {
-    bg: "bg-keylio-border-primary",
-  },
-} as const;
+import { DRAWER_TOKENS } from "./tokens";
 
 // ============================================================================
 // Base Drawer Components
@@ -159,6 +143,7 @@ export {
   DrawerTitle,
   DrawerDescription,
   DrawerBody,
-  // Tokens
-  DRAWER_TOKENS,
 };
+
+// Re-export tokens for backward compatibility
+export { DRAWER_TOKENS } from "./tokens";

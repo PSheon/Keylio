@@ -28,6 +28,23 @@ import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { cn } from "@/lib/utils";
 
 // ============================================================================
+// Responsive Sheet Context
+// 使用 Context 避免子組件重複調用 useMediaQuery
+// ============================================================================
+
+const ResponsiveSheetContext = React.createContext<boolean | null>(null);
+
+/**
+ * Hook to get desktop state from context
+ * Falls back to useMediaQuery if used outside ResponsiveSheet
+ */
+function useIsDesktop(): boolean {
+  const context = React.useContext(ResponsiveSheetContext);
+  const fallback = useMediaQuery("(min-width: 640px)");
+  return context ?? fallback;
+}
+
+// ============================================================================
 // Responsive Sheet
 // 桌面版使用 Dialog，手機版使用底部 Drawer
 // ============================================================================
@@ -44,18 +61,20 @@ interface ResponsiveSheetProps {
 function ResponsiveSheet({ open, onOpenChange, children }: ResponsiveSheetProps) {
   const isDesktop = useMediaQuery("(min-width: 640px)");
 
-  if (isDesktop) {
-    return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        {children}
-      </Dialog>
-    );
-  }
-
-  return (
+  const content = isDesktop ? (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {children}
+    </Dialog>
+  ) : (
     <Drawer open={open} onOpenChange={onOpenChange}>
       {children}
     </Drawer>
+  );
+
+  return (
+    <ResponsiveSheetContext.Provider value={isDesktop}>
+      {content}
+    </ResponsiveSheetContext.Provider>
   );
 }
 
@@ -66,7 +85,7 @@ interface ResponsiveSheetTriggerProps {
 }
 
 function ResponsiveSheetTrigger({ children, asChild, className }: ResponsiveSheetTriggerProps) {
-  const isDesktop = useMediaQuery("(min-width: 640px)");
+  const isDesktop = useIsDesktop();
 
   if (isDesktop) {
     return (
@@ -98,7 +117,7 @@ function ResponsiveSheetContent({
   size = "lg",
   showCloseButton = true,
 }: ResponsiveSheetContentProps) {
-  const isDesktop = useMediaQuery("(min-width: 640px)");
+  const isDesktop = useIsDesktop();
 
   if (isDesktop) {
     return (
@@ -121,7 +140,7 @@ interface ResponsiveSheetHeaderProps {
 }
 
 function ResponsiveSheetHeader({ children, className }: ResponsiveSheetHeaderProps) {
-  const isDesktop = useMediaQuery("(min-width: 640px)");
+  const isDesktop = useIsDesktop();
 
   if (isDesktop) {
     return <DialogHeader className={className}>{children}</DialogHeader>;
@@ -136,7 +155,7 @@ interface ResponsiveSheetTitleProps {
 }
 
 function ResponsiveSheetTitle({ children, className }: ResponsiveSheetTitleProps) {
-  const isDesktop = useMediaQuery("(min-width: 640px)");
+  const isDesktop = useIsDesktop();
 
   if (isDesktop) {
     return <DialogTitle className={className}>{children}</DialogTitle>;
@@ -151,7 +170,7 @@ interface ResponsiveSheetDescriptionProps {
 }
 
 function ResponsiveSheetDescription({ children, className }: ResponsiveSheetDescriptionProps) {
-  const isDesktop = useMediaQuery("(min-width: 640px)");
+  const isDesktop = useIsDesktop();
 
   if (isDesktop) {
     return <DialogDescription className={className}>{children}</DialogDescription>;
@@ -166,7 +185,7 @@ interface ResponsiveSheetBodyProps {
 }
 
 function ResponsiveSheetBody({ children, className }: ResponsiveSheetBodyProps) {
-  const isDesktop = useMediaQuery("(min-width: 640px)");
+  const isDesktop = useIsDesktop();
 
   if (isDesktop) {
     return <DialogBody className={className}>{children}</DialogBody>;
@@ -181,7 +200,7 @@ interface ResponsiveSheetFooterProps {
 }
 
 function ResponsiveSheetFooter({ children, className }: ResponsiveSheetFooterProps) {
-  const isDesktop = useMediaQuery("(min-width: 640px)");
+  const isDesktop = useIsDesktop();
 
   if (isDesktop) {
     return <DialogFooter className={className}>{children}</DialogFooter>;
@@ -197,7 +216,7 @@ interface ResponsiveSheetCloseProps {
 }
 
 function ResponsiveSheetClose({ children, asChild, className }: ResponsiveSheetCloseProps) {
-  const isDesktop = useMediaQuery("(min-width: 640px)");
+  const isDesktop = useIsDesktop();
 
   if (isDesktop) {
     return (
