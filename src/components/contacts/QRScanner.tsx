@@ -1,22 +1,22 @@
 "use client";
 
 import { useState, useEffect, useRef, memo, useCallback } from "react";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { 
-  Camera, 
-  X, 
+import { ethers } from "ethers";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Camera,
+  X,
   Loader2,
   AlertCircle,
   CheckCircle,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ethers } from "ethers";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { fadeInUp } from "@/lib/animations";
 import type { Html5Qrcode } from "html5-qrcode";
 
@@ -46,7 +46,7 @@ function QRScannerComponent({ isOpen, onClose, onScan }: QRScannerProps) {
   const [scannedData, setScannedData] = useState<QRContactData | null>(null);
   const scannerRef = useRef<HTMLDivElement>(null);
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
-  
+
   // Parse QR code data
   const parseQRData = useCallback((decodedText: string): QRContactData | null => {
     try {
@@ -60,7 +60,7 @@ function QRScannerComponent({ isOpen, onClose, onScan }: QRScannerProps) {
     } catch {
       // Not JSON, try plain address
     }
-    
+
     // Try plain Ethereum address
     try {
       const address = ethers.getAddress(decodedText.trim());
@@ -71,7 +71,7 @@ function QRScannerComponent({ isOpen, onClose, onScan }: QRScannerProps) {
     } catch {
       // Not a valid address
     }
-    
+
     // Try EIP-681 format (ethereum:0x...)
     if (decodedText.startsWith("ethereum:")) {
       try {
@@ -85,27 +85,27 @@ function QRScannerComponent({ isOpen, onClose, onScan }: QRScannerProps) {
         // Invalid EIP-681
       }
     }
-    
+
     return null;
   }, []);
-  
+
   // Initialize scanner
   useEffect(() => {
     if (!isOpen) return;
-    
+
     let mounted = true;
     let scanner: Html5Qrcode | null = null;
-    
+
     const initScanner = async () => {
       try {
         // Dynamic import to avoid SSR issues
         const { Html5Qrcode } = await import("html5-qrcode");
-        
+
         if (!mounted || !scannerRef.current) return;
-        
+
         scanner = new Html5Qrcode("qr-scanner-region");
         html5QrCodeRef.current = scanner;
-        
+
         await scanner.start(
           { facingMode: "environment" }, // Back camera
           {
@@ -129,7 +129,7 @@ function QRScannerComponent({ isOpen, onClose, onScan }: QRScannerProps) {
             // Error callback (ignore - just means no QR found in frame)
           }
         );
-        
+
         if (mounted) {
           setScanState("scanning");
         }
@@ -148,10 +148,10 @@ function QRScannerComponent({ isOpen, onClose, onScan }: QRScannerProps) {
         }
       }
     };
-    
+
     // Small delay to ensure DOM is ready
     const timer = setTimeout(initScanner, 100);
-    
+
     return () => {
       mounted = false;
       clearTimeout(timer);
@@ -160,7 +160,7 @@ function QRScannerComponent({ isOpen, onClose, onScan }: QRScannerProps) {
       }
     };
   }, [isOpen, parseQRData]);
-  
+
   // Cleanup on close
   const handleClose = useCallback(() => {
     if (html5QrCodeRef.current) {
@@ -171,7 +171,7 @@ function QRScannerComponent({ isOpen, onClose, onScan }: QRScannerProps) {
     setErrorMessage("");
     onClose();
   }, [onClose]);
-  
+
   // Confirm scanned contact
   const handleConfirm = useCallback(() => {
     if (scannedData) {
@@ -179,14 +179,14 @@ function QRScannerComponent({ isOpen, onClose, onScan }: QRScannerProps) {
       handleClose();
     }
   }, [scannedData, onScan, handleClose]);
-  
+
   // Retry scanning
   const handleRetry = useCallback(() => {
     setScanState("initializing");
     setScannedData(null);
     setErrorMessage("");
   }, []);
-  
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="bg-keylio-bg-secondary border-keylio-border-primary max-w-md p-0 overflow-hidden">
@@ -206,7 +206,7 @@ function QRScannerComponent({ isOpen, onClose, onScan }: QRScannerProps) {
             </Button>
           </DialogTitle>
         </DialogHeader>
-        
+
         <div className="p-4">
           <AnimatePresence mode="wait">
             {/* Initializing / Scanning */}
@@ -219,12 +219,12 @@ function QRScannerComponent({ isOpen, onClose, onScan }: QRScannerProps) {
               >
                 <div className="relative bg-black rounded-xl overflow-hidden aspect-square">
                   {/* Scanner region */}
-                  <div 
-                    id="qr-scanner-region" 
+                  <div
+                    id="qr-scanner-region"
                     ref={scannerRef}
                     className="w-full h-full"
                   />
-                  
+
                   {/* Overlay with scanning frame */}
                   <div className="absolute inset-0 pointer-events-none">
                     {/* Corner markers */}
@@ -234,24 +234,24 @@ function QRScannerComponent({ isOpen, onClose, onScan }: QRScannerProps) {
                       <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-keylio-teal rounded-bl-lg" />
                       <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-keylio-teal rounded-br-lg" />
                     </div>
-                    
+
                     {/* Scan line animation */}
                     {scanState === "scanning" && (
                       <motion.div
                         className="absolute left-1/2 -translate-x-1/2 w-[230px] h-0.5 bg-keylio-teal shadow-[0_0_8px_rgba(20,184,166,0.5)]"
                         style={{ top: "calc(50% - 115px)" }}
-                        animate={{ 
-                          top: ["calc(50% - 115px)", "calc(50% + 115px)", "calc(50% - 115px)"] 
+                        animate={{
+                          top: ["calc(50% - 115px)", "calc(50% + 115px)", "calc(50% - 115px)"]
                         }}
-                        transition={{ 
-                          duration: 2, 
-                          repeat: Infinity, 
-                          ease: "linear" 
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                          ease: "linear"
                         }}
                       />
                     )}
                   </div>
-                  
+
                   {/* Loading indicator */}
                   {scanState === "initializing" && (
                     <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
@@ -262,13 +262,13 @@ function QRScannerComponent({ isOpen, onClose, onScan }: QRScannerProps) {
                     </div>
                   )}
                 </div>
-                
+
                 <p className="text-center text-sm text-keylio-text-muted mt-4">
                   將 QR Code 對準框內進行掃描
                 </p>
               </motion.div>
             )}
-            
+
             {/* Error State */}
             {scanState === "error" && (
               <motion.div
@@ -304,10 +304,9 @@ function QRScannerComponent({ isOpen, onClose, onScan }: QRScannerProps) {
                 </div>
               </motion.div>
             )}
-            
+
             {/* Success State */}
-            {scanState === "success" && scannedData && (
-              <motion.div
+            {scanState === "success" && scannedData ? <motion.div
                 key="success"
                 variants={fadeInUp}
                 initial="initial"
@@ -320,16 +319,14 @@ function QRScannerComponent({ isOpen, onClose, onScan }: QRScannerProps) {
                 <p className="text-keylio-text-primary font-medium mb-2">
                   掃描成功！
                 </p>
-                
+
                 <div className="bg-keylio-bg-tertiary rounded-xl p-4 mb-6 text-left">
-                  {scannedData.name && (
-                    <div className="mb-2">
+                  {scannedData.name ? <div className="mb-2">
                       <p className="text-xs text-keylio-text-muted">名稱</p>
                       <p className="text-keylio-text-primary font-medium">
                         {scannedData.name}
                       </p>
-                    </div>
-                  )}
+                    </div> : null}
                   <div>
                     <p className="text-xs text-keylio-text-muted">地址</p>
                     <p className="text-keylio-text-primary font-mono text-sm break-all">
@@ -337,7 +334,7 @@ function QRScannerComponent({ isOpen, onClose, onScan }: QRScannerProps) {
                     </p>
                   </div>
                 </div>
-                
+
                 <div className="flex gap-3">
                   <Button
                     variant="outline"
@@ -353,8 +350,7 @@ function QRScannerComponent({ isOpen, onClose, onScan }: QRScannerProps) {
                     新增聯絡人
                   </Button>
                 </div>
-              </motion.div>
-            )}
+              </motion.div> : null}
           </AnimatePresence>
         </div>
       </DialogContent>

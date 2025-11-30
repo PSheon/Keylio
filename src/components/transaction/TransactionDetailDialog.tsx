@@ -18,6 +18,8 @@ import {
   Tag,
   FileText,
 } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -25,18 +27,16 @@ import {
   DialogTitle,
   DialogBody,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { toast } from "sonner";
-import { formatCurrency, formatDateTime, shortenAddress } from "@/lib/formatters";
 import { ACTIVE_CHAIN } from "@/lib/chain";
-import { cn } from "@/lib/utils";
+import { formatCurrency, formatDateTime, shortenAddress } from "@/lib/formatters";
 import type { Transaction } from "@/lib/storage/db";
+import { cn } from "@/lib/utils";
 
 interface TransactionDetailDialogProps {
   /** 交易資料 */
@@ -66,11 +66,11 @@ function TransactionDetailDialogComponent({
   // 計算交易類型
   const txMeta = useMemo(() => {
     if (!transaction) return null;
-    
+
     const isIncoming = transaction.to.toLowerCase() === walletAddress.toLowerCase();
     // TODO: 根據 transaction.type 判斷是否為兌換
     const isSwap = false;
-    
+
     return {
       isIncoming,
       isSwap,
@@ -169,7 +169,7 @@ function TransactionDetailDialogComponent({
           {/* 交易摘要 */}
           <div className="flex flex-col items-center text-center py-4">
             {getDirectionIcon()}
-            
+
             <div className="mt-4">
               <span
                 className={cn(
@@ -182,7 +182,7 @@ function TransactionDetailDialogComponent({
                 <span className="ml-1">{statusStyle.label}</span>
               </span>
             </div>
-            
+
             <h3
               className={cn(
                 "text-3xl font-bold mt-3",
@@ -192,7 +192,7 @@ function TransactionDetailDialogComponent({
               {txMeta.amountSign}
               {amount.toFixed(2)} {transaction.token}
             </h3>
-            
+
             <p className="text-keylio-text-secondary mt-1">
               ≈ {formatCurrency(amount)}
             </p>
@@ -240,22 +240,18 @@ function TransactionDetailDialogComponent({
             />
 
             {/* 分類標籤 */}
-            {transaction.label && (
-              <DetailRow
+            {transaction.label ? <DetailRow
                 icon={<Tag className="w-4 h-4" />}
                 label="分類"
                 value={transaction.label}
-              />
-            )}
+              /> : null}
 
             {/* 備註 */}
-            {transaction.note && (
-              <DetailRow
+            {transaction.note ? <DetailRow
                 icon={<FileText className="w-4 h-4" />}
                 label="備註"
                 value={transaction.note}
-              />
-            )}
+              /> : null}
           </div>
 
           {/* 操作按鈕 */}
@@ -310,14 +306,12 @@ function DetailRow({ icon, label, value, fullValue, onCopy }: DetailRowProps) {
             {value}
           </span>
         )}
-        {onCopy && (
-          <button
+        {onCopy ? <button
             onClick={onCopy}
             className="p-1 hover:bg-keylio-bg-tertiary rounded transition-colors"
           >
             <Copy className="w-3.5 h-3.5 text-keylio-text-muted hover:text-keylio-text-primary" />
-          </button>
-        )}
+          </button> : null}
       </div>
     </div>
   );

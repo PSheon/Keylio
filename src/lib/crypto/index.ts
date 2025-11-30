@@ -1,5 +1,5 @@
-import { ethers } from 'ethers';
 import * as bip39 from 'bip39';
+import { ethers } from 'ethers';
 import { KeylioError, ErrorCode } from '../errors';
 
 // ========================================
@@ -49,7 +49,7 @@ export const deriveWallet = (mnemonic: string, index: number = 0): ethers.HDNode
   if (!validateMnemonic(mnemonic)) {
     throw new KeylioError(ErrorCode.AUTH_INVALID_MNEMONIC);
   }
-  
+
   try {
     // Use Mnemonic class for better compatibility
     const mnemonicObj = ethers.Mnemonic.fromPhrase(mnemonic.trim());
@@ -73,7 +73,7 @@ export const deriveXpub = (mnemonic: string): string => {
   if (!validateMnemonic(mnemonic)) {
     throw new KeylioError(ErrorCode.AUTH_INVALID_MNEMONIC);
   }
-  
+
   try {
     // Use Mnemonic class for better compatibility
     const mnemonicObj = ethers.Mnemonic.fromPhrase(mnemonic.trim());
@@ -262,12 +262,12 @@ export const decryptStoredPassword = async (encryptedData: EncryptedData): Promi
  */
 function arrayBufferToBase64(buffer: ArrayBuffer | ArrayBufferLike): string {
   const bytes = new Uint8Array(buffer);
-  
+
   // Use Buffer in Node.js environment, or manual conversion in browser
   if (typeof Buffer !== 'undefined') {
     return Buffer.from(bytes).toString('base64');
   }
-  
+
   let binary = '';
   const len = bytes.byteLength;
   for (let i = 0; i < len; i++) {
@@ -285,7 +285,7 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
     const buffer = Buffer.from(base64, 'base64');
     return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
   }
-  
+
   const binary_string = atob(base64);
   const len = binary_string.length;
   const bytes = new Uint8Array(len);

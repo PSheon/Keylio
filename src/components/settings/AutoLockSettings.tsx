@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Clock } from "lucide-react";
+import { toast } from "sonner";
 import {
   Select,
   SelectContent,
@@ -11,7 +12,6 @@ import {
 } from "@/components/ui/select";
 import { sessionManager } from "@/lib/session";
 import { useSettingsStore } from "@/stores/useSettingsStore";
-import { toast } from "sonner";
 
 const AUTO_LOCK_OPTIONS = [
   { value: "1", label: "1 分鐘" },
@@ -34,10 +34,10 @@ export function AutoLockSettings() {
     const minutes = parseInt(value, 10);
     setSelectedValue(value);
     setAutoLockMinutes(minutes);
-    
+
     // Update session manager
     sessionManager.configure({ autoLockMinutes: minutes });
-    
+
     toast.success(`自動鎖定時間已更新為 ${minutes === 0 ? '永不' : `${minutes} 分鐘`}`);
   };
 
@@ -58,8 +58,8 @@ export function AutoLockSettings() {
         </SelectTrigger>
         <SelectContent className="bg-keylio-bg-secondary border-keylio-border-primary">
           {AUTO_LOCK_OPTIONS.map((option) => (
-            <SelectItem 
-              key={option.value} 
+            <SelectItem
+              key={option.value}
               value={option.value}
               className="text-keylio-text-primary hover:bg-keylio-bg-tertiary cursor-pointer"
             >

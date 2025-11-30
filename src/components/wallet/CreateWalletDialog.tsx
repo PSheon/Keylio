@@ -1,24 +1,24 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger, 
+import { Loader2, Shield } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
   DialogFooter,
   DialogBody,
   DialogDescription
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
-import { Loader2, Shield } from "lucide-react";
 import db from "@/lib/storage/db";
-import { useWalletStore } from "@/stores/useWalletStore";
 import { cn } from "@/lib/utils";
+import { useWalletStore } from "@/stores/useWalletStore";
 
 // ============================================================================
 // Types & Constants
@@ -52,11 +52,11 @@ function SecurityTip() {
 }
 
 /** Emoji picker grid */
-function EmojiPicker({ 
-  value, 
-  onChange 
-}: { 
-  value: string; 
+function EmojiPicker({
+  value,
+  onChange
+}: {
+  value: string;
   onChange: (emoji: string) => void;
 }) {
   return (
@@ -84,11 +84,11 @@ function EmojiPicker({
 }
 
 /** Color picker grid */
-function ColorPicker({ 
-  value, 
-  onChange 
-}: { 
-  value: string; 
+function ColorPicker({
+  value,
+  onChange
+}: {
+  value: string;
   onChange: (color: string) => void;
 }) {
   return (
@@ -104,7 +104,7 @@ function ColorPicker({
               "w-8 h-8 rounded-full transition-all",
               value === c && "ring-2 ring-offset-2 ring-offset-keylio-bg-secondary"
             )}
-            style={{ 
+            style={{
               backgroundColor: c,
               ...(value === c && { '--tw-ring-color': c } as React.CSSProperties)
             }}
@@ -199,7 +199,7 @@ export function CreateWalletDialog({ trigger, onSuccess }: CreateWalletDialogPro
           <div className="flex justify-center py-2">
             <div
               className="w-16 h-16 rounded-full flex items-center justify-center text-3xl border-2"
-              style={{ 
+              style={{
                 backgroundColor: `${color}20`,
                 borderColor: color
               }}
@@ -221,7 +221,7 @@ export function CreateWalletDialog({ trigger, onSuccess }: CreateWalletDialogPro
               autoFocus
             />
           </div>
-          
+
           {/* Emoji Picker */}
           <EmojiPicker value={emoji} onChange={setEmoji} />
 
@@ -233,16 +233,16 @@ export function CreateWalletDialog({ trigger, onSuccess }: CreateWalletDialogPro
         </DialogBody>
 
         <DialogFooter>
-          <Button 
-            variant="outline" 
-            onClick={() => setIsOpen(false)} 
+          <Button
+            variant="outline"
+            onClick={() => setIsOpen(false)}
             className="border-keylio-border text-keylio-text-secondary hover:bg-keylio-bg-tertiary"
           >
             取消
           </Button>
-          <Button 
-            onClick={handleCreate} 
-            disabled={isProcessing || !name.trim()} 
+          <Button
+            onClick={handleCreate}
+            disabled={isProcessing || !name.trim()}
             className="bg-keylio-teal hover:bg-keylio-teal/90"
           >
             {isProcessing ? (

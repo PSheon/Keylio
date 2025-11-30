@@ -79,9 +79,7 @@ const DrawerContent = React.forwardRef<
       )}
       {...props}
     >
-      {showHandle && (
-        <div className="mx-auto mt-3 h-1.5 w-12 rounded-full bg-keylio-border-primary" />
-      )}
+      {showHandle ? <div className="mx-auto mt-3 h-1.5 w-12 rounded-full bg-keylio-border-primary" /> : null}
       {children}
     </DrawerPrimitive.Content>
   </DrawerPortal>

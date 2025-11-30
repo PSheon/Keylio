@@ -13,14 +13,14 @@ import {
   ArrowDownToLine,
   History,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { ReceiveDialog } from "@/components/transaction/ReceiveDialog";
 import { AllTransactionsDialog } from "@/components/transaction/AllTransactionsDialog";
+import { ReceiveDialog } from "@/components/transaction/ReceiveDialog";
 import { TransactionDetailDialog } from "@/components/transaction/TransactionDetailDialog";
+import { Button } from "@/components/ui/button";
 import { fadeInUp } from "@/lib/animations";
 import { formatCurrency, formatRelativeTime } from "@/lib/formatters";
-import { cn } from "@/lib/utils";
 import type { Transaction } from "@/lib/storage/db";
+import { cn } from "@/lib/utils";
 
 interface RecentActivityListProps {
   /** 交易列表 */
@@ -39,7 +39,7 @@ function RecentActivityListComponent({
   walletAddress,
 }: RecentActivityListProps) {
   const isEmpty = !transactions || transactions.length === 0;
-  
+
   // 交易詳情 Dialog 狀態
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -51,7 +51,7 @@ function RecentActivityListComponent({
 
   return (
     <>
-      <motion.div 
+      <motion.div
         variants={fadeInUp}
         className="bg-keylio-bg-secondary rounded-2xl border border-keylio-border-primary overflow-hidden"
       >

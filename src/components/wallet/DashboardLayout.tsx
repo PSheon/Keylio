@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { Home, Users, Settings, X, LogOut, Clock, AlertTriangle } from "lucide-react";
-import { useWalletStore } from "@/stores/useWalletStore";
 import { useRouter, usePathname } from "next/navigation";
-import { ACTIVE_CHAIN } from "@/lib/chain";
-import { useActivityTracker } from "@/hooks/useActivityTracker";
-import { useSessionContext } from "@/components/providers/SessionProvider";
+import { Home, Users, Settings, X, LogOut, Clock, AlertTriangle } from "lucide-react";
 import { BottomNavigation } from "@/components/navigation";
+import { useSessionContext } from "@/components/providers/SessionProvider";
+import { useActivityTracker } from "@/hooks/useActivityTracker";
+import { ACTIVE_CHAIN } from "@/lib/chain";
+import { useWalletStore } from "@/stores/useWalletStore";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -19,29 +19,29 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const destroySession = useWalletStore((state) => state.destroySession);
   const router = useRouter();
   const pathname = usePathname();
-  
+
   // Track if session was ever active (to detect expiration vs initial load)
   const wasActiveRef = useRef(false);
-  
+
   // Track user activity for auto-lock
   useActivityTracker({ enabled: true });
-  
+
   // Session state from context
   const { isActive, timeRemaining } = useSessionContext();
-  
+
   // Track when session becomes active
   useEffect(() => {
     if (isActive) {
       wasActiveRef.current = true;
     }
   }, [isActive]);
-  
+
   // Compute warning state (no setState in effect)
-  const showTimeWarning = useMemo(() => 
-    timeRemaining < 60000 && timeRemaining > 0, 
+  const showTimeWarning = useMemo(() =>
+    timeRemaining < 60000 && timeRemaining > 0,
     [timeRemaining]
   );
-  
+
   // Format time remaining
   const formatTimeRemaining = useCallback((ms: number) => {
     if (ms === Infinity) return "";
@@ -75,7 +75,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     /**
      * Dashboard Layout 架構說明
-     * 
+     *
      * 高度約束鏈（Desktop）:
      * ┌─ Root Container (h-screen) ─────────────────────────────┐
      * │  ┌─ Testnet Banner (shrink-0, 可選) ──────────────────┐ │
@@ -92,7 +92,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
      * │  │  └────────────┘  └───────────────────────────────┘ │ │
      * │  └────────────────────────────────────────────────────┘ │
      * └─────────────────────────────────────────────────────────┘
-     * 
+     *
      * 關鍵點：
      * 1. Root 使用 h-screen 鎖定視窗高度
      * 2. flex-1 搭配 min-h-0 打破 flex item 預設的 min-height: auto
@@ -100,15 +100,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
      */
     <div className="h-screen bg-keylio-bg-primary text-keylio-text-primary flex flex-col overflow-hidden">
       {/* Testnet Warning Banner - P0: 測試網明顯標示 */}
-      {ACTIVE_CHAIN.isTestnet && (
-        <div className="shrink-0 bg-amber-500/20 border-b border-amber-500/30 px-4 py-2 flex items-center justify-center gap-2 z-50">
+      {ACTIVE_CHAIN.isTestnet ? <div className="shrink-0 bg-amber-500/20 border-b border-amber-500/30 px-4 py-2 flex items-center justify-center gap-2 z-50">
           <AlertTriangle className="w-4 h-4 text-amber-400" />
           <span className="text-xs text-amber-400 font-medium">
             ⚠️ 測試網路模式 ({ACTIVE_CHAIN.displayName}) - 資產不具真實價值
           </span>
-        </div>
-      )}
-      
+        </div> : null}
+
       {/* App Container - flex-1 + min-h-0 建立高度約束 */}
       <div className="flex-1 min-h-0 flex relative">
         {/* Background Gradients (Unified with Welcome Screen) */}
@@ -118,15 +116,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
 
         {/* Mobile Sidebar Overlay - 只在手機打開時顯示 */}
-        {isSidebarOpen && (
-          <div 
+        {isSidebarOpen ? <div
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
             onClick={() => setIsSidebarOpen(false)}
-          />
-        )}
+          /> : null}
 
         {/* Sidebar - Desktop: 固定寬度，佔滿父容器高度 */}
-        <aside 
+        <aside
           className={`
             fixed lg:relative inset-y-0 left-0 z-50 w-60 h-full
             bg-keylio-bg-secondary/80 backdrop-blur-xl border-r border-keylio-border-primary 
@@ -186,7 +182,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
           {/* 底部鎖定按鈕 */}
           <div className="p-4 border-t border-keylio-border-primary/50 shrink-0">
-            <button 
+            <button
               onClick={handleLogout}
               className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-keylio-text-secondary hover:bg-red-500/10 hover:text-red-500 transition-colors"
             >
@@ -227,14 +223,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
             <div className="flex items-center gap-4">
               {/* Auto-lock timer warning */}
-              {showTimeWarning && (
-                <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 animate-pulse">
+              {showTimeWarning ? <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 animate-pulse">
                   <Clock size={14} className="text-amber-400" />
                   <span className="text-xs font-medium text-amber-400">
                     即將鎖定 {formatTimeRemaining(timeRemaining)}
                   </span>
-                </div>
-              )}
+                </div> : null}
               {/* Network indicator */}
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-teal-500/10 border border-teal-500/20 shadow-[0_0_10px_rgba(20,184,166,0.1)]">
                 <div className="w-2 h-2 rounded-full bg-teal-500 animate-pulse" />

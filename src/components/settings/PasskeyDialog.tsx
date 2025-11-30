@@ -1,17 +1,7 @@
 "use client";
 
 import { memo, useState, useCallback } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogBody,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useLiveQuery } from "dexie-react-hooks";
 import {
   Fingerprint,
   Plus,
@@ -21,12 +11,22 @@ import {
   Check,
   X,
 } from "lucide-react";
-import db, { type PasskeyMetadata } from "@/lib/storage/db";
-import { useLiveQuery } from "dexie-react-hooks";
-import { usePasskeyManager } from "@/hooks/usePasskeyManager";
-import { usePasskeyEditor } from "@/hooks/usePasskeyEditor";
-import { AuthVerification } from "@/components/auth/AuthVerification";
 import { toast } from "sonner";
+import { AuthVerification } from "@/components/auth/AuthVerification";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { usePasskeyEditor } from "@/hooks/usePasskeyEditor";
+import { usePasskeyManager } from "@/hooks/usePasskeyManager";
+import db, { type PasskeyMetadata } from "@/lib/storage/db";
 
 interface PasskeyDialogProps {
   open: boolean;
@@ -174,17 +174,14 @@ function PasskeyDialogComponent({ open, onOpenChange }: PasskeyDialogProps) {
                         <>
                           <div className="text-sm font-medium flex items-center gap-2">
                             <span className="truncate">{pk.name}</span>
-                            {pk.isDefault && (
-                              <span className="text-xs bg-teal-500/20 text-teal-400 px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0">
+                            {pk.isDefault ? <span className="text-xs bg-teal-500/20 text-teal-400 px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0">
                                 <Star className="w-3 h-3 fill-current" />
                                 預設
-                              </span>
-                            )}
+                              </span> : null}
                           </div>
                           <div className="text-xs text-keylio-text-muted">
                             {new Date(pk.createdAt).toLocaleDateString()}
-                            {pk.lastUsed &&
-                              ` • 上次: ${new Date(pk.lastUsed).toLocaleDateString()}`}
+                            {pk.lastUsed ? ` • 上次: ${new Date(pk.lastUsed).toLocaleDateString()}` : null}
                           </div>
                         </>
                       )}

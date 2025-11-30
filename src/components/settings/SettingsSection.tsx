@@ -25,7 +25,7 @@ interface SettingsSectionProps {
 
 /**
  * 設定區塊組件
- * 
+ *
  * 提供統一的區塊標題和間距樣式，用於設定頁面的分區顯示。
  * 每個區塊包含：
  * - 區塊標題（帶可選圖標）
@@ -43,14 +43,11 @@ function SettingsSectionComponent({
     <section className={cn("space-y-3", className)}>
       {/* 區塊標題 */}
       <div className="flex items-center gap-2">
-        {icon && (
-          <span className="text-keylio-teal">{icon}</span>
-        )}
+        {icon ? <span className="text-keylio-teal">{icon}</span> : null}
         <h3 className="text-sm font-semibold text-keylio-text-secondary uppercase tracking-wider">
           {title}
         </h3>
-        {description && (
-          <TooltipProvider>
+        {description ? <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
                 <button className="p-0.5 hover:bg-keylio-bg-tertiary rounded transition-colors">
@@ -61,8 +58,7 @@ function SettingsSectionComponent({
                 <p className="text-xs">{description}</p>
               </TooltipContent>
             </Tooltip>
-          </TooltipProvider>
-        )}
+          </TooltipProvider> : null}
       </div>
 
       {/* 區塊內容 */}

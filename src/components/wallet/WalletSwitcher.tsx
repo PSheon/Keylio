@@ -10,6 +10,8 @@ import {
   Loader2,
   MoreHorizontal,
 } from "lucide-react";
+import { toast } from "sonner";
+import { useShallow } from "zustand/react/shallow";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,13 +24,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useWalletStore } from "@/stores/useWalletStore";
-import { useShallow } from "zustand/react/shallow";
-import { toast } from "sonner";
-import db from "@/lib/storage/db";
 import { deriveAddressFromXpub } from "@/lib/crypto";
-import { cn } from "@/lib/utils";
+import db from "@/lib/storage/db";
 import type { SubWallet } from "@/lib/storage/db";
+import { cn } from "@/lib/utils";
+import { useWalletStore } from "@/stores/useWalletStore";
 
 // ============================================================================
 // Constants
@@ -60,7 +60,7 @@ function WalletAvatar({ emoji, color, size = "md" }: WalletAvatarProps) {
         "rounded-full flex items-center justify-center shrink-0",
         sizeClasses[size]
       )}
-      style={{ 
+      style={{
         backgroundColor: `${color}20`,
         ...(size === "lg" && { borderColor: color })
       }}
@@ -79,13 +79,13 @@ interface WalletListItemProps {
   onMore?: (e: React.MouseEvent) => void;
 }
 
-function WalletListItem({ 
-  wallet, 
-  isActive, 
+function WalletListItem({
+  wallet,
+  isActive,
   isCopied,
-  onSelect, 
+  onSelect,
   onCopy,
-  onMore 
+  onMore
 }: WalletListItemProps) {
   const shortAddress = `${wallet.address.slice(0, 6)}...${wallet.address.slice(-4)}`;
 
@@ -107,7 +107,7 @@ function WalletListItem({
       )}
     >
       <WalletAvatar emoji={wallet.emoji} color={wallet.color} />
-      
+
       <div className="flex-1 text-left min-w-0">
         <div className="font-medium text-keylio-text-primary truncate">
           {wallet.name}
@@ -116,7 +116,7 @@ function WalletListItem({
           {shortAddress}
         </div>
       </div>
-      
+
       <div className="flex items-center gap-1 shrink-0">
         <button
           onClick={onCopy}
@@ -129,20 +129,16 @@ function WalletListItem({
             <Copy className="size-4 text-keylio-text-muted" />
           )}
         </button>
-        
-        {onMore && (
-          <button
+
+        {onMore ? <button
             onClick={onMore}
             className="p-2 hover:bg-keylio-bg-primary rounded-lg transition-colors"
             aria-label="更多選項"
           >
             <MoreHorizontal className="size-4 text-keylio-text-muted" />
-          </button>
-        )}
-        
-        {isActive && (
-          <div className="w-2 h-2 rounded-full bg-keylio-teal ml-1" />
-        )}
+          </button> : null}
+
+        {isActive ? <div className="w-2 h-2 rounded-full bg-keylio-teal ml-1" /> : null}
       </div>
     </div>
   );
@@ -252,10 +248,10 @@ export function WalletSwitcher() {
       >
         {activeWallet ? (
           <>
-            <WalletAvatar 
-              emoji={activeWallet.emoji} 
-              color={activeWallet.color} 
-              size="sm" 
+            <WalletAvatar
+              emoji={activeWallet.emoji}
+              color={activeWallet.color}
+              size="sm"
             />
             <span className="text-sm font-medium text-keylio-text-primary max-w-[100px] truncate">
               {activeWallet.name}
@@ -323,10 +319,10 @@ export function WalletSwitcher() {
           <DialogBody>
             {/* Preview */}
             <div className="flex justify-center py-2">
-              <WalletAvatar 
-                emoji={selectedEmoji} 
-                color={selectedColor} 
-                size="lg" 
+              <WalletAvatar
+                emoji={selectedEmoji}
+                color={selectedColor}
+                size="lg"
               />
             </div>
 
@@ -375,7 +371,7 @@ export function WalletSwitcher() {
                       "w-8 h-8 rounded-full transition-all",
                       selectedColor === color && "ring-2 ring-offset-2 ring-offset-keylio-bg-secondary"
                     )}
-                    style={{ 
+                    style={{
                       backgroundColor: color,
                       ...(selectedColor === color && { '--tw-ring-color': color } as React.CSSProperties)
                     }}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, memo, useCallback } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
 import { motion } from "framer-motion";
 import {
   Search,
@@ -13,6 +14,9 @@ import {
   Calendar,
   Wallet,
 } from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Input } from "@/components/ui/input";
 import {
   ResponsiveSheet,
   ResponsiveSheetTrigger,
@@ -21,7 +25,6 @@ import {
   ResponsiveSheetTitle,
   ResponsiveSheetBody,
 } from "@/components/ui/responsive-sheet";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -30,16 +33,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { EmptyState } from "@/components/ui/empty-state";
-import { TransactionDetailDialog } from "./TransactionDetailDialog";
-import { useWalletStore } from "@/stores/useWalletStore";
-import { useLiveQuery } from "dexie-react-hooks";
-import { useShallow } from "zustand/react/shallow";
+import { staggerContainer, staggerItem } from "@/lib/animations";
+import { formatCurrency, formatDateTime, shortenAddress } from "@/lib/formatters";
 import db from "@/lib/storage/db";
 import type { Transaction } from "@/lib/storage/db";
-import { formatCurrency, formatDateTime, shortenAddress } from "@/lib/formatters";
-import { staggerContainer, staggerItem } from "@/lib/animations";
 import { cn } from "@/lib/utils";
+import { useWalletStore } from "@/stores/useWalletStore";
+import { TransactionDetailDialog } from "./TransactionDetailDialog";
 
 interface AllTransactionsDialogProps {
   /** 觸發器元素 */
@@ -57,7 +57,7 @@ type AmountRange = "all" | "small" | "medium" | "large";
 
 /**
  * 所有交易紀錄 Dialog
- * 
+ *
  * 功能：
  * - 篩選條：類型（全部/收款/支出/兌換）、日期範圍、金額範圍
  * - 搜尋框：地址/Tx hash
@@ -70,7 +70,7 @@ function AllTransactionsDialogComponent({ trigger }: AllTransactionsDialogProps)
   const [filterType, setFilterType] = useState<FilterType>("all");
   const [dateRange, setDateRange] = useState<DateRange>("30d");
   const [amountRange, setAmountRange] = useState<AmountRange>("all");
-  
+
   // 交易詳情 Dialog 狀態
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -118,7 +118,7 @@ function AllTransactionsDialogComponent({ trigger }: AllTransactionsDialogProps)
   // 篩選交易 - 使用 callback 來避免在 useMemo 中調用 Date.now()
   const filterTransactions = useCallback((transactions: Transaction[], wallet: typeof activeWallet) => {
     if (!transactions || !wallet) return [];
-    
+
     const now = Date.now();
     const dateThreshold = dateOffsetMs > 0 ? now - dateOffsetMs : 0;
 

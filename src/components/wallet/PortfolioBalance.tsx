@@ -4,15 +4,15 @@ import { memo, useState } from "react";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, Info } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { fadeInUp } from "@/lib/animations";
-import { formatCurrency } from "@/lib/formatters";
-import { useSettingsStore } from "@/stores/useSettingsStore";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { fadeInUp } from "@/lib/animations";
+import { formatCurrency } from "@/lib/formatters";
+import { useSettingsStore } from "@/stores/useSettingsStore";
 
 /** TWD 匯率（實際應從 API 獲取） */
 const USD_TO_TWD = 32.5;
@@ -28,7 +28,7 @@ interface PortfolioBalanceProps {
 
 /**
  * 全局總資產 KPI 區塊 (View-only)
- * 
+ *
  * 設計重點：
  * 1. 只顯示「總資產」$X + ≈ NT$ 參考價
  * 2. 右側眼睛 icon 控制顯示/隱藏（全局同步）
@@ -42,10 +42,10 @@ function PortfolioBalanceComponent({
 }: PortfolioBalanceProps) {
   const hideBalancesSetting = useSettingsStore((state) => state.hideBalances);
   const setHideBalances = useSettingsStore((state) => state.setHideBalances);
-  
+
   // 本地狀態用於 'hide-on-start' 模式下的眼睛圖示切換
   const [localHidden, setLocalHidden] = useState(true);
-  
+
   const toggleHideBalances = () => {
     if (hideBalancesSetting === 'always-show' || hideBalancesSetting === 'always-hide') {
       // 如果是固定設定，切換到另一個固定設定
@@ -55,10 +55,10 @@ function PortfolioBalanceComponent({
       setLocalHidden(!localHidden);
     }
   };
-  
+
   // 根據設定計算是否應該隱藏
-  const shouldHide = 
-    hideBalancesSetting === 'always-hide' || 
+  const shouldHide =
+    hideBalancesSetting === 'always-hide' ||
     (hideBalancesSetting === 'hide-on-start' && localHidden);
 
   // 計算 TWD 等值
@@ -121,8 +121,8 @@ function PortfolioBalanceComponent({
             </h1>
             {/* TWD 參考價 */}
             <p className="text-base text-keylio-text-muted mt-1">
-              {shouldHide 
-                ? "••••••" 
+              {shouldHide
+                ? "••••••"
                 : `≈ NT$ ${totalTWD.toLocaleString('zh-TW', { maximumFractionDigits: 0 })}`
               }
             </p>

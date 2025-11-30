@@ -3,13 +3,13 @@
 import { memo } from "react";
 import { motion } from "framer-motion";
 import { Copy, ExternalLink } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { staggerItem } from "@/lib/animations";
-import { cn } from "@/lib/utils";
-import { toast } from "sonner";
-import { formatUSD, formatTokenBalance } from "@/lib/formatters";
 import { ACTIVE_CHAIN } from "@/lib/chain";
+import { formatUSD, formatTokenBalance } from "@/lib/formatters";
+import { cn } from "@/lib/utils";
 
 /** StablecoinRow 變體 */
 export type StablecoinRowVariant = "default" | "compact" | "detailed";
@@ -115,11 +115,9 @@ function StablecoinRowComponent({
               <span className="font-semibold text-keylio-text-primary">
                 {coin.symbol}
               </span>
-              {coin.isMainstream && (
-                <span className="text-xs px-1.5 py-0.5 rounded bg-keylio-teal/10 text-keylio-teal">
+              {coin.isMainstream ? <span className="text-xs px-1.5 py-0.5 rounded bg-keylio-teal/10 text-keylio-teal">
                   主流
-                </span>
-              )}
+                </span> : null}
             </div>
             <div className="text-xs text-keylio-text-muted">{coin.name}</div>
           </div>
@@ -155,8 +153,7 @@ function StablecoinRowComponent({
           </div>
 
           {/* Actions - show on hover */}
-          {coin.contractAddress && (
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          {coin.contractAddress ? <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <Button
                 variant="ghost"
                 size="sm"
@@ -173,8 +170,7 @@ function StablecoinRowComponent({
               >
                 <ExternalLink className="w-3.5 h-3.5 text-keylio-text-muted" />
               </Button>
-            </div>
-          )}
+            </div> : null}
         </div>
       </motion.div>
     );

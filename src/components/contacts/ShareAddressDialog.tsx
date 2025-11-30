@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { Copy, Share2, QrCode, CheckCircle2 } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -8,11 +11,8 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { ContactQRCode } from "./ContactQRCode";
 import { useWalletStore } from "@/stores/useWalletStore";
-import { toast } from "sonner";
-import { Copy, Share2, QrCode, CheckCircle2 } from "lucide-react";
+import { ContactQRCode } from "./ContactQRCode";
 
 interface ShareAddressDialogProps {
   open: boolean;
@@ -26,18 +26,18 @@ interface ShareAddressDialogProps {
  */
 export function ShareAddressDialog({ open, onOpenChange }: ShareAddressDialogProps) {
   const [copied, setCopied] = useState(false);
-  
+
   // 從錢包 store 取得當前地址
   const getCurrentWallet = useWalletStore((state) => state.getCurrentWallet);
   const currentWallet = getCurrentWallet();
-  
+
   const address = currentWallet?.address || "";
   const walletName = currentWallet?.name || "我的錢包";
-  
+
   // 複製地址到剪貼簿
   const handleCopy = async () => {
     if (!address) return;
-    
+
     try {
       await navigator.clipboard.writeText(address);
       setCopied(true);
@@ -47,17 +47,17 @@ export function ShareAddressDialog({ open, onOpenChange }: ShareAddressDialogPro
       toast.error("複製失敗，請手動複製");
     }
   };
-  
+
   // 使用系統分享功能
   const handleShare = async () => {
     if (!address) return;
-    
+
     const shareData = {
       title: "Keylio 錢包地址",
       text: `${walletName}\n${address}`,
       // 如果有 deeplink 可加入 url
     };
-    
+
     if (navigator.share && navigator.canShare(shareData)) {
       try {
         await navigator.share(shareData);
@@ -73,7 +73,7 @@ export function ShareAddressDialog({ open, onOpenChange }: ShareAddressDialogPro
       handleCopy();
     }
   };
-  
+
   if (!address) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -88,7 +88,7 @@ export function ShareAddressDialog({ open, onOpenChange }: ShareAddressDialogPro
       </Dialog>
     );
   }
-  
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[400px]">
@@ -101,7 +101,7 @@ export function ShareAddressDialog({ open, onOpenChange }: ShareAddressDialogPro
             讓朋友掃描 QR Code 或複製地址來加入聯絡人
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-6 py-4">
           {/* QR Code */}
           <div className="flex justify-center">
@@ -112,18 +112,18 @@ export function ShareAddressDialog({ open, onOpenChange }: ShareAddressDialogPro
               className="shadow-lg"
             />
           </div>
-          
+
           {/* 錢包名稱 */}
           <div className="text-center">
             <p className="font-medium text-lg">{walletName}</p>
           </div>
-          
+
           {/* 地址顯示 */}
           <div className="bg-muted rounded-lg p-3">
             <p className="text-sm text-muted-foreground mb-1">錢包地址</p>
             <p className="font-mono text-sm break-all">{address}</p>
           </div>
-          
+
           {/* 操作按鈕 */}
           <div className="flex gap-3">
             <Button
@@ -143,7 +143,7 @@ export function ShareAddressDialog({ open, onOpenChange }: ShareAddressDialogPro
                 </>
               )}
             </Button>
-            
+
             <Button
               className="flex-1"
               onClick={handleShare}

@@ -33,7 +33,7 @@ export const CHAINS: Record<string, ChainConfig> = {
     displayName: 'Ethereum',
     symbol: 'ETH',
     decimals: 18,
-    rpcUrl: ALCHEMY_API_KEY 
+    rpcUrl: ALCHEMY_API_KEY
       ? `https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`
       : 'https://ethereum-rpc.publicnode.com',
     fallbackRpcUrls: [
@@ -45,7 +45,7 @@ export const CHAINS: Record<string, ChainConfig> = {
     isTestnet: false,
     color: '#627EEA',
   },
-  
+
   // Ethereum Sepolia Testnet
   'eth-sepolia': {
     chainId: 11155111,
@@ -65,7 +65,7 @@ export const CHAINS: Record<string, ChainConfig> = {
     isTestnet: true,
     color: '#627EEA',
   },
-  
+
   // Plasma Mainnet
   'plasma-mainnet': {
     chainId: 9745,
@@ -78,7 +78,7 @@ export const CHAINS: Record<string, ChainConfig> = {
     isTestnet: false,
     color: '#14B8A6', // Teal color
   },
-  
+
   // Plasma Testnet
   'plasma-testnet': {
     chainId: 9746, // Testnet chain ID (please verify if different)
@@ -100,12 +100,12 @@ export const CHAINS: Record<string, ChainConfig> = {
 // Get active chain from environment variable
 const getActiveChainName = (): string => {
   const envChain = process.env.NEXT_PUBLIC_CHAIN_NAME;
-  
+
   // Validate chain exists
   if (envChain && CHAINS[envChain]) {
     return envChain;
   }
-  
+
   // Default to Ethereum Sepolia if no chain specified
   return 'eth-sepolia';
 };
@@ -155,16 +155,16 @@ async function checkProviderHealth(provider: ethers.JsonRpcProvider): Promise<bo
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
-    
+
     await Promise.race([
       provider.getBlockNumber(),
-      new Promise((_, reject) => 
-        controller.signal.addEventListener('abort', () => 
+      new Promise((_, reject) =>
+        controller.signal.addEventListener('abort', () =>
           reject(new Error('Health check timeout'))
         )
       )
     ]);
-    
+
     clearTimeout(timeoutId);
     return true;
   } catch {
@@ -177,14 +177,14 @@ async function checkProviderHealth(provider: ethers.JsonRpcProvider): Promise<bo
  */
 async function findWorkingRpc(chainConfig: ChainConfig): Promise<string> {
   const urls = [chainConfig.rpcUrl, ...(chainConfig.fallbackRpcUrls || [])];
-  
+
   for (const url of urls) {
     const testProvider = createProvider(url, chainConfig);
     if (await checkProviderHealth(testProvider)) {
       return url;
     }
   }
-  
+
   // If all fail, return primary URL anyway
   return chainConfig.rpcUrl;
 }
@@ -195,14 +195,14 @@ async function findWorkingRpc(chainConfig: ChainConfig): Promise<string> {
  */
 export const getProvider = async (): Promise<ethers.JsonRpcProvider> => {
   const now = Date.now();
-  
+
   // Return cached provider if healthy
   if (providerState && providerState.isHealthy) {
     // Periodic health check
     if (now - providerState.lastHealthCheck > HEALTH_CHECK_INTERVAL) {
       providerState.isHealthy = await checkProviderHealth(providerState.provider);
       providerState.lastHealthCheck = now;
-      
+
       if (!providerState.isHealthy) {
         // Provider became unhealthy, try to find a new one
         const workingRpc = await findWorkingRpc(ACTIVE_CHAIN);
@@ -216,7 +216,7 @@ export const getProvider = async (): Promise<ethers.JsonRpcProvider> => {
     }
     return providerState.provider;
   }
-  
+
   // Create new provider
   const workingRpc = await findWorkingRpc(ACTIVE_CHAIN);
   providerState = {
@@ -225,7 +225,7 @@ export const getProvider = async (): Promise<ethers.JsonRpcProvider> => {
     isHealthy: true,
     lastHealthCheck: now,
   };
-  
+
   return providerState.provider;
 };
 
@@ -237,7 +237,7 @@ export const getProviderSync = (): ethers.JsonRpcProvider => {
   if (providerState) {
     return providerState.provider;
   }
-  
+
   const provider = createProvider(ACTIVE_CHAIN.rpcUrl, ACTIVE_CHAIN);
   providerState = {
     provider,
@@ -245,7 +245,7 @@ export const getProviderSync = (): ethers.JsonRpcProvider => {
     isHealthy: true,
     lastHealthCheck: Date.now(),
   };
-  
+
   return provider;
 };
 
@@ -257,7 +257,7 @@ export const getProviderForChain = (chainName: string): ethers.JsonRpcProvider =
   if (!chain) {
     throw new KeylioError(ErrorCode.NETWORK_CHAIN_MISMATCH, { chainName });
   }
-  
+
   return createProvider(chain.rpcUrl, chain);
 };
 
@@ -269,26 +269,26 @@ export async function withRetry<T>(
   maxRetries: number = 3
 ): Promise<T> {
   let lastError: Error | null = null;
-  
+
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       const provider = await getProvider();
       return await fn(provider);
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      
+
       // Mark provider as unhealthy and try again
       if (providerState) {
         providerState.isHealthy = false;
       }
-      
+
       // Wait before retry (exponential backoff)
       if (attempt < maxRetries - 1) {
         await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
       }
     }
   }
-  
+
   throw new KeylioError(
     ErrorCode.NETWORK_RPC_ERROR,
     { attempts: maxRetries },

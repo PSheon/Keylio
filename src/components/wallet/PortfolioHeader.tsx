@@ -2,8 +2,8 @@
 
 import { memo } from "react";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { WalletSwitcher } from "@/components/wallet/WalletSwitcher";
 import { fadeInUp } from "@/lib/animations";
 

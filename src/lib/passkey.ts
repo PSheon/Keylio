@@ -1,5 +1,5 @@
 import { startRegistration, startAuthentication } from '@simplewebauthn/browser';
-import { PublicKeyCredentialCreationOptionsJSON, PublicKeyCredentialRequestOptionsJSON } from '@simplewebauthn/types';
+import { type PublicKeyCredentialCreationOptionsJSON, type PublicKeyCredentialRequestOptionsJSON } from '@simplewebauthn/types';
 import db from '@/lib/storage/db';
 import type { PasskeyMetadata } from '@/lib/storage/db';
 
@@ -12,22 +12,22 @@ const RP_NAME = 'Keylio Wallet';
  */
 export const detectDeviceName = async (authenticatorAttachment?: string): Promise<string> => {
   const ua = navigator.userAgent;
-  
+
   // Get existing passkeys count for numbering
   const setting = await db.settings.get({ key: 'passkeys_metadata' });
   const passkeys = (setting?.value as PasskeyMetadata[]) || [];
-  
+
   // If cross-platform (QR code from phone), use generic name
   if (authenticatorAttachment === 'cross-platform') {
-    const crossPlatformCount = passkeys.filter(pk => 
+    const crossPlatformCount = passkeys.filter(pk =>
       pk.name.includes('Phone') || pk.name.includes('Other Device')
     ).length;
     return `Phone/Other Device ${crossPlatformCount + 1}`;
   }
-  
+
   // Platform authenticator - detect from User Agent
   let deviceType = 'Device';
-  
+
   // Mac detection
   if (ua.includes('Mac')) {
     deviceType = 'Mac';
@@ -52,12 +52,12 @@ export const detectDeviceName = async (authenticatorAttachment?: string): Promis
   else if (ua.includes('Linux')) {
     deviceType = 'Linux';
   }
-  
+
   // Count devices of the same type
-  const sameTypeCount = passkeys.filter(pk => 
+  const sameTypeCount = passkeys.filter(pk =>
     pk.name.startsWith(`My ${deviceType}`)
   ).length;
-  
+
   return `My ${deviceType} ${sameTypeCount + 1}`;
 };
 
@@ -121,14 +121,14 @@ export const registerPasskey = async (username: string) => {
     const setting = await db.settings.get({ key: 'passkeys_metadata' });
     const existingPasskeys = (setting?.value as PasskeyMetadata[]) || [];
     const excludeCredentials = existingPasskeys.map(pk => pk.credentialId);
-    
+
     const options = await generateRegistrationOptions(username, excludeCredentials);
     const attResp = await startRegistration({ optionsJSON: options });
-    
+
     if (excludeCredentials.includes(attResp.id)) {
       throw new Error('此設備已加入');
     }
-    
+
     return {
       credentialId: attResp.id,
       rawId: attResp.rawId,
@@ -148,7 +148,7 @@ export const registerPasskey = async (username: string) => {
 export const authenticatePasskey = async (credentialId?: string) => {
   try {
     const options = await generateAuthenticationOptions();
-    
+
     // If credentialId provided, specify it in allowCredentials
     if (credentialId) {
       options.allowCredentials = [
@@ -159,9 +159,8 @@ export const authenticatePasskey = async (credentialId?: string) => {
         },
       ];
     }
-    
+
     const authResp = await startAuthentication({ optionsJSON: options });
-    console.log('Passkey Authenticated:', authResp);
     // In a real app, send authResp to server for verification
     return {
       success: true,

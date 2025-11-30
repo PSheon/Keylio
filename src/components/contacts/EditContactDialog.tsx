@@ -1,6 +1,10 @@
 "use client";
 
 import { useState, useEffect, memo } from "react";
+import { ethers } from "ethers";
+import { Edit, Loader2, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,12 +13,8 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Edit, Loader2, Trash2 } from "lucide-react";
-import { toast } from "sonner";
-import { ethers } from "ethers";
 import db, { type Contact } from "@/lib/storage/db";
 
 // 常用 Emoji 列表
@@ -31,9 +31,9 @@ interface EditContactDialogProps {
  * 編輯聯絡人對話框
  * Spec: 編輯現有聯絡人的名稱、emoji 和地址
  */
-function EditContactDialogComponent({ 
-  contact, 
-  open, 
+function EditContactDialogComponent({
+  contact,
+  open,
   onOpenChange,
   onDelete,
 }: EditContactDialogProps) {
@@ -42,11 +42,11 @@ function EditContactDialogComponent({
   const [emoji, setEmoji] = useState("👤");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  
+
   // 錯誤狀態
   const [nameError, setNameError] = useState("");
   const [addressError, setAddressError] = useState("");
-  
+
   // 當 contact 改變時重置表單
   useEffect(() => {
     if (contact) {
@@ -55,7 +55,7 @@ function EditContactDialogComponent({
       setEmoji(contact.emoji || "👤");
     }
   }, [contact]);
-  
+
   // 重置表單
   const resetForm = () => {
     if (contact) {
@@ -67,11 +67,11 @@ function EditContactDialogComponent({
     setAddressError("");
     setShowDeleteConfirm(false);
   };
-  
+
   // 驗證表單
   const validateForm = (): boolean => {
     let isValid = true;
-    
+
     // 驗證名稱
     if (!name.trim()) {
       setNameError("請輸入名稱");
@@ -82,7 +82,7 @@ function EditContactDialogComponent({
     } else {
       setNameError("");
     }
-    
+
     // 驗證地址
     try {
       ethers.getAddress(address.trim());
@@ -91,16 +91,16 @@ function EditContactDialogComponent({
       setAddressError("無效的錢包地址");
       isValid = false;
     }
-    
+
     return isValid;
   };
-  
+
   // 提交更新
   const handleSubmit = async () => {
     if (!contact?.id || !validateForm()) return;
-    
+
     setIsSubmitting(true);
-    
+
     try {
       // 檢查新地址是否與其他聯絡人重複
       if (address.toLowerCase() !== contact.address.toLowerCase()) {
@@ -108,21 +108,21 @@ function EditContactDialogComponent({
           .where('address')
           .equalsIgnoreCase(address.trim())
           .first();
-        
+
         if (existing && existing.id !== contact.id) {
           setAddressError("此地址已存在於聯絡簿中");
           setIsSubmitting(false);
           return;
         }
       }
-      
+
       // 更新聯絡人
       await db.contacts.update(contact.id, {
         name: name.trim(),
         address: ethers.getAddress(address.trim()), // 正規化地址
         emoji,
       });
-      
+
       toast.success("聯絡人已更新");
       onOpenChange(false);
     } catch (error) {
@@ -132,13 +132,13 @@ function EditContactDialogComponent({
       setIsSubmitting(false);
     }
   };
-  
+
   // 刪除聯絡人
   const handleDelete = async () => {
     if (!contact?.id) return;
-    
+
     setIsSubmitting(true);
-    
+
     try {
       await db.contacts.delete(contact.id);
       toast.success("聯絡人已刪除");
@@ -152,12 +152,12 @@ function EditContactDialogComponent({
       setShowDeleteConfirm(false);
     }
   };
-  
+
   if (!contact) return null;
-  
+
   return (
-    <Dialog 
-      open={open} 
+    <Dialog
+      open={open}
       onOpenChange={(isOpen) => {
         if (!isOpen) resetForm();
         onOpenChange(isOpen);
@@ -173,7 +173,7 @@ function EditContactDialogComponent({
             修改聯絡人的資訊
           </DialogDescription>
         </DialogHeader>
-        
+
         {/* 刪除確認 */}
         {showDeleteConfirm ? (
           <div className="py-6 text-center">
@@ -222,8 +222,8 @@ function EditContactDialogComponent({
                       type="button"
                       onClick={() => setEmoji(e)}
                       className={`w-10 h-10 rounded-lg text-xl flex items-center justify-center transition-all ${
-                        emoji === e 
-                          ? "bg-keylio-teal/20 ring-2 ring-keylio-teal" 
+                        emoji === e
+                          ? "bg-keylio-teal/20 ring-2 ring-keylio-teal"
                           : "bg-keylio-bg-tertiary hover:bg-keylio-bg-tertiary/80"
                       }`}
                     >
@@ -232,7 +232,7 @@ function EditContactDialogComponent({
                   ))}
                 </div>
               </div>
-              
+
               {/* 名稱輸入 */}
               <div className="space-y-2">
                 <Label htmlFor="edit-name" className="text-keylio-text-secondary">
@@ -250,11 +250,9 @@ function EditContactDialogComponent({
                     nameError ? "border-red-500" : ""
                   }`}
                 />
-                {nameError && (
-                  <p className="text-xs text-red-400">{nameError}</p>
-                )}
+                {nameError ? <p className="text-xs text-red-400">{nameError}</p> : null}
               </div>
-              
+
               {/* 地址輸入 */}
               <div className="space-y-2">
                 <Label htmlFor="edit-address" className="text-keylio-text-secondary">
@@ -272,12 +270,10 @@ function EditContactDialogComponent({
                     addressError ? "border-red-500" : ""
                   }`}
                 />
-                {addressError && (
-                  <p className="text-xs text-red-400">{addressError}</p>
-                )}
+                {addressError ? <p className="text-xs text-red-400">{addressError}</p> : null}
               </div>
             </div>
-            
+
             <DialogFooter className="flex-col sm:flex-row gap-2">
               <Button
                 variant="ghost"

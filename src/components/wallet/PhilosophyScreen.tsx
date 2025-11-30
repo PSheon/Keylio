@@ -2,8 +2,8 @@
 
 import { memo } from "react";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import { Shield, Lock, KeyRound } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface PhilosophyScreenProps {
   onStart: () => void;
@@ -35,11 +35,11 @@ export const PhilosophyScreen = memo(function PhilosophyScreen({
         >
           {/* Glow Effect */}
           <div className="absolute inset-0 bg-teal-500/20 rounded-full blur-2xl animate-pulse" />
-          
+
           {/* Main Icon Container */}
           <div className="relative w-full h-full rounded-3xl bg-linear-to-br from-teal-400/20 to-teal-600/20 border border-teal-500/30 backdrop-blur-sm flex items-center justify-center">
             <Shield className="w-16 h-16 text-teal-400" strokeWidth={1.5} />
-            
+
             {/* Floating Icons */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -49,7 +49,7 @@ export const PhilosophyScreen = memo(function PhilosophyScreen({
             >
               <Lock className="w-5 h-5 text-teal-300" />
             </motion.div>
-            
+
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -111,7 +111,7 @@ export const PhilosophyScreen = memo(function PhilosophyScreen({
           >
             開始設定
           </Button>
-          
+
           <p className="mt-4 text-xs text-gray-500">
             設定只需 1 分鐘
           </p>

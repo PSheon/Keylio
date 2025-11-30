@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useMemo, useCallback, memo } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Plus, QrCode, User, Star } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -11,14 +13,12 @@ import {
   DialogTrigger,
   DialogBody,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { ContactRow } from "./ContactRow";
-import { AddContactDialog } from "./AddContactDialog";
-import db, { type Contact } from "@/lib/storage/db";
-import { useLiveQuery } from "dexie-react-hooks";
+import { Input } from "@/components/ui/input";
 import { staggerContainer, fadeInUp } from "@/lib/animations";
+import db, { type Contact } from "@/lib/storage/db";
+import { AddContactDialog } from "./AddContactDialog";
+import { ContactRow } from "./ContactRow";
 
 interface ContactPickerDialogProps {
   /** 觸發器元素 */
@@ -109,8 +109,7 @@ function ContactPickerDialogComponent({
                 className="pl-10 bg-keylio-bg-primary border-keylio-border-primary"
               />
             </div>
-            {showAddButton && (
-              <AddContactDialog
+            {showAddButton ? <AddContactDialog
                 trigger={
                   <Button
                     variant="outline"
@@ -121,8 +120,7 @@ function ContactPickerDialogComponent({
                   </Button>
                 }
                 onSuccess={handleAddSuccess}
-              />
-            )}
+              /> : null}
           </div>
 
           {/* Contact List */}
@@ -170,16 +168,14 @@ function ContactPickerDialogComponent({
               )}
 
               {/* No Search Results */}
-              {hasContacts && !hasFilteredResults && searchQuery && (
-                <motion.div variants={fadeInUp} className="py-6">
+              {hasContacts && !hasFilteredResults && searchQuery ? <motion.div variants={fadeInUp} className="py-6">
                   <EmptyState
                     icon="🔍"
                     title="沒有找到符合的聯絡人"
                     description={`找不到「${searchQuery}」相關的聯絡人`}
                     size="sm"
                   />
-                </motion.div>
-              )}
+                </motion.div> : null}
 
               {/* Favorites Section */}
               {favorites.length > 0 && (

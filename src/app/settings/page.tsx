@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { DashboardLayout } from "@/components/wallet/DashboardLayout";
-import { Card, CardContent } from "@/components/ui/card";
+import { useLiveQuery } from "dexie-react-hooks";
 import {
   Shield,
   Palette,
@@ -10,17 +9,18 @@ import {
   ChevronRight,
   Fingerprint,
 } from "lucide-react";
-import { SettingsSection } from "@/components/settings/SettingsSection";
-import { ThemeSettings } from "@/components/settings/ThemeSettings";
-import { LanguageSettings } from "@/components/settings/LanguageSettings";
-import { CurrencySettings } from "@/components/settings/CurrencySettings";
 import { AutoLockSettings } from "@/components/settings/AutoLockSettings";
+import { BackupMnemonicDialog } from "@/components/settings/BackupMnemonicDialog";
+import { CurrencySettings } from "@/components/settings/CurrencySettings";
 import { HideBalanceSettings } from "@/components/settings/HideBalanceSettings";
+import { LanguageSettings } from "@/components/settings/LanguageSettings";
 import { LargeTransferSettings } from "@/components/settings/LargeTransferSettings";
 import { PasskeyDialog } from "@/components/settings/PasskeyDialog";
-import { BackupMnemonicDialog } from "@/components/settings/BackupMnemonicDialog";
+import { SettingsSection } from "@/components/settings/SettingsSection";
+import { ThemeSettings } from "@/components/settings/ThemeSettings";
+import { Card, CardContent } from "@/components/ui/card";
+import { DashboardLayout } from "@/components/wallet/DashboardLayout";
 import db, { type PasskeyMetadata } from "@/lib/storage/db";
-import { useLiveQuery } from "dexie-react-hooks";
 
 export default function SettingsPage() {
   const [passkeyDialogOpen, setPasskeyDialogOpen] = useState(false);

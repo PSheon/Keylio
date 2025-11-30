@@ -1,60 +1,81 @@
 "use client";
 
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ethers } from "ethers";
+import { ArrowRight, Fingerprint, CheckCircle, Loader2, Users, Zap, Sparkles, ExternalLink } from "lucide-react";
+import { toast } from "sonner";
+import { ContactPickerDialog } from "@/components/contacts/ContactPickerDialog";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
-import { ArrowRight, Fingerprint, CheckCircle, Loader2, Users, Zap, Sparkles, ExternalLink } from "lucide-react";
-import { ethers } from "ethers";
+import { useTokenBalance } from "@/hooks/useTokenBalance";
+import { ACTIVE_CHAIN } from "@/lib/chain";
+import { KeylioError, ErrorCode } from "@/lib/errors";
 import { authenticatePasskey } from "@/lib/passkey";
 import { getAllTokens, formatTokenAmount, formatUSD, getTokenValueUSD } from "@/lib/tokens";
-import { useTokenBalance } from "@/hooks/useTokenBalance";
-import { ContactPickerDialog } from "@/components/contacts/ContactPickerDialog";
-import { ACTIVE_CHAIN } from "@/lib/chain";
 import { sendTransactionWithSession, validateTransaction, type TransactionResult } from "@/lib/transaction";
 import { useWalletStore } from "@/stores/useWalletStore";
-import { KeylioError, ErrorCode } from "@/lib/errors";
 
 interface SendDialogProps {
   fromAddress: string;
   trigger?: React.ReactNode;
   onSuccess?: () => void;
+  /** Controlled open state */
+  open?: boolean;
+  /** Controlled open change handler */
+  onOpenChange?: (open: boolean) => void;
+  /** Pre-filled recipient address */
+  defaultRecipient?: string;
+  /** Pre-filled recipient name */
+  defaultRecipientName?: string;
 }
 
-export function SendDialog({ fromAddress, trigger, onSuccess }: SendDialogProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export function SendDialog({
+  fromAddress,
+  trigger,
+  onSuccess,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  defaultRecipient = "",
+  defaultRecipientName = "",
+}: SendDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+
+  // Support both controlled and uncontrolled modes
+  const isOpen = controlledOpen ?? internalOpen;
+  const setIsOpen = controlledOnOpenChange ?? setInternalOpen;
+
   const [step, setStep] = useState<'input' | 'preview' | 'sign' | 'success'>('input');
-  const [recipient, setRecipient] = useState("");
-  const [recipientName, setRecipientName] = useState("");
+  const [recipient, setRecipient] = useState(defaultRecipient);
+  const [recipientName, setRecipientName] = useState(defaultRecipientName);
   const [amount, setAmount] = useState("");
   const [selectedToken, setSelectedToken] = useState("USDT");
   const [note, setNote] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [txResult, setTxResult] = useState<TransactionResult | null>(null);
-  
+
   // Get current wallet index
   const getCurrentWallet = useWalletStore((state) => state.getCurrentWallet);
   const currentWallet = getCurrentWallet();
   const walletIndex = currentWallet?.index ?? 0;
 
   const tokens = getAllTokens();
-  const currentToken = tokens.find(t => t.symbol === selectedToken);  
-  
+  const currentToken = tokens.find(t => t.symbol === selectedToken);
+
   const { data: balance } = useTokenBalance(
     currentToken?.address,
     fromAddress
   );
 
-  const formattedBalance = balance 
+  const formattedBalance = balance
     ? formatTokenAmount(balance, currentToken?.decimals || 18)
     : "0";
 
-  const quickAmounts = selectedToken === "ETH" 
-    ? [0.01, 0.05, 0.1] 
+  const quickAmounts = selectedToken === "ETH"
+    ? [0.01, 0.05, 0.1]
     : [10, 50, 100];
 
   const handleContactSelect = (address: string, name?: string) => {
@@ -71,15 +92,15 @@ export function SendDialog({ fromAddress, trigger, onSuccess }: SendDialogProps)
       toast.error("無效的錢包地址");
       return;
     }
-    
+
     const numAmount = parseFloat(amount);
     const numBalance = parseFloat(formattedBalance);
-    
+
     if (numAmount > numBalance) {
       toast.error("餘額不足");
       return;
     }
-    
+
     setStep('preview');
   };
 
@@ -88,7 +109,7 @@ export function SendDialog({ fromAddress, trigger, onSuccess }: SendDialogProps)
     try {
       // 1. Authenticate with Passkey
       await authenticatePasskey();
-      
+
       // 2. Validate transaction
       const validation = await validateTransaction(fromAddress, {
         to: recipient,
@@ -96,13 +117,13 @@ export function SendDialog({ fromAddress, trigger, onSuccess }: SendDialogProps)
         tokenAddress: currentToken?.address,
         note,
       });
-      
+
       if (!validation.isValid) {
         toast.error(validation.error || "交易驗證失敗");
         setIsProcessing(false);
         return;
       }
-      
+
       // 3. Send transaction using session
       const result = await sendTransactionWithSession(walletIndex, {
         to: recipient,
@@ -111,14 +132,14 @@ export function SendDialog({ fromAddress, trigger, onSuccess }: SendDialogProps)
         note,
         label: recipientName || undefined,
       });
-      
+
       setTxResult(result);
       setStep('success');
       toast.success("交易已發送");
       if (onSuccess) onSuccess();
     } catch (error) {
       console.error(error);
-      
+
       if (error instanceof KeylioError) {
         switch (error.code) {
           case ErrorCode.AUTH_SESSION_EXPIRED:
@@ -156,7 +177,7 @@ export function SendDialog({ fromAddress, trigger, onSuccess }: SendDialogProps)
     }, 300);
   };
 
-  const valueUSD = currentToken 
+  const valueUSD = currentToken
     ? getTokenValueUSD(amount || "0", currentToken.symbol)
     : 0;
 
@@ -185,7 +206,7 @@ export function SendDialog({ fromAddress, trigger, onSuccess }: SendDialogProps)
           {/* Step Indicator */}
           <div className="flex items-center gap-2 pt-2">
             <div className="flex-1 h-1.5 bg-keylio-bg-tertiary rounded-full overflow-hidden">
-              <div 
+              <div
                 className="h-full bg-linear-to-r from-teal-500 to-teal-400 transition-all duration-300"
                 style={{ width: `${(currentStepNumber / totalSteps) * 100}%` }}
               />
@@ -207,8 +228,8 @@ export function SendDialog({ fromAddress, trigger, onSuccess }: SendDialogProps)
                 </SelectTrigger>
                 <SelectContent className="bg-keylio-bg-secondary border-keylio-border-primary">
                   {tokens.map((token) => (
-                    <SelectItem 
-                      key={token.symbol} 
+                    <SelectItem
+                      key={token.symbol}
                       value={token.symbol}
                       className="text-keylio-text-primary hover:bg-keylio-bg-tertiary"
                     >
@@ -239,7 +260,7 @@ export function SendDialog({ fromAddress, trigger, onSuccess }: SendDialogProps)
                   className="flex-1 bg-keylio-bg-primary border-keylio-border-primary font-mono text-sm"
                   placeholder="0x..."
                 />
-                <ContactPickerDialog 
+                <ContactPickerDialog
                   onSelect={handleContactSelect}
                   trigger={
                     <Button
@@ -253,12 +274,10 @@ export function SendDialog({ fromAddress, trigger, onSuccess }: SendDialogProps)
                   }
                 />
               </div>
-              {recipientName && (
-                <div className="text-xs text-keylio-teal flex items-center gap-1">
+              {recipientName ? <div className="text-xs text-keylio-teal flex items-center gap-1">
                   <Users className="w-3 h-3" />
                   {recipientName}
-                </div>
-              )}
+                </div> : null}
             </div>
 
             {/* Amount */}
@@ -275,14 +294,12 @@ export function SendDialog({ fromAddress, trigger, onSuccess }: SendDialogProps)
                 />
                 <span className="absolute right-3 top-2.5 text-keylio-text-secondary text-sm">{selectedToken}</span>
               </div>
-              {amount && (
-                <div className="text-xs text-keylio-text-muted">
+              {amount ? <div className="text-xs text-keylio-text-muted">
                   ≈ {formatUSD(valueUSD)}
-                </div>
-              )}
+                </div> : null}
               <div className="flex gap-2 mt-1">
                 {quickAmounts.map(val => (
-                  <button 
+                  <button
                     key={val}
                     onClick={() => setAmount(val.toString())}
                     className="text-xs bg-keylio-bg-tertiary px-2 py-1 rounded hover:bg-keylio-teal/20 hover:text-keylio-teal transition-colors"
@@ -290,7 +307,7 @@ export function SendDialog({ fromAddress, trigger, onSuccess }: SendDialogProps)
                     {val}
                   </button>
                 ))}
-                <button 
+                <button
                   onClick={() => setAmount(formattedBalance)}
                   className="text-xs bg-keylio-bg-tertiary px-2 py-1 rounded hover:bg-keylio-teal/20 hover:text-keylio-teal transition-colors"
                 >
@@ -329,7 +346,7 @@ export function SendDialog({ fromAddress, trigger, onSuccess }: SendDialogProps)
                   <div className="text-xs text-keylio-text-muted">{formatUSD(valueUSD)}</div>
                 </div>
               </div>
-              
+
               {/* Plasma Network Benefits */}
               <div className="bg-teal-500/10 border border-teal-500/20 rounded-lg p-3 space-y-2">
                 <div className="flex items-center justify-between">
@@ -350,13 +367,11 @@ export function SendDialog({ fromAddress, trigger, onSuccess }: SendDialogProps)
                   {ACTIVE_CHAIN.displayName} 網路優勢
                 </div>
               </div>
-              
-              {note && (
-                <div className="flex justify-between items-start">
+
+              {note ? <div className="flex justify-between items-start">
                   <span className="text-gray-400 text-sm">備註</span>
                   <span className="text-sm text-right max-w-[200px]">{note}</span>
-                </div>
-              )}
+                </div> : null}
               <div className="h-px bg-[#1e2749]" />
               <div className="flex justify-between items-center">
                 <span className="text-gray-400 text-sm">總計</span>
@@ -373,9 +388,7 @@ export function SendDialog({ fromAddress, trigger, onSuccess }: SendDialogProps)
               </div>
               <div>
                 <div className="text-xs text-gray-400">收款人</div>
-                {recipientName && (
-                  <div className="text-sm font-medium text-keylio-teal mb-1">{recipientName}</div>
-                )}
+                {recipientName ? <div className="text-sm font-medium text-keylio-teal mb-1">{recipientName}</div> : null}
                 <div className="text-sm font-mono break-all">{recipient}</div>
               </div>
             </div>
@@ -400,8 +413,8 @@ export function SendDialog({ fromAddress, trigger, onSuccess }: SendDialogProps)
               <h3 className="text-lg font-medium mb-2">驗證 Passkey</h3>
               <p className="text-sm text-gray-400">請使用生物辨識確認此筆交易</p>
             </div>
-            <Button 
-              onClick={handleSign} 
+            <Button
+              onClick={handleSign}
               disabled={isProcessing}
               className="w-full bg-teal-600 hover:bg-teal-700"
             >
@@ -425,14 +438,12 @@ export function SendDialog({ fromAddress, trigger, onSuccess }: SendDialogProps)
             <div>
               <h3 className="text-lg font-medium mb-2">發送成功！</h3>
               <p className="text-sm text-gray-400">交易已廣播至網路</p>
-              {txResult && (
-                <div className="mt-3 p-3 bg-keylio-bg-tertiary rounded-lg">
+              {txResult ? <div className="mt-3 p-3 bg-keylio-bg-tertiary rounded-lg">
                   <p className="text-xs text-keylio-text-muted mb-1">交易 Hash</p>
                   <p className="text-xs font-mono text-keylio-text-secondary break-all">
                     {txResult.hash.slice(0, 20)}...{txResult.hash.slice(-10)}
                   </p>
-                  {ACTIVE_CHAIN.explorerUrl && (
-                    <a
+                  {ACTIVE_CHAIN.explorerUrl ? <a
                       href={`${ACTIVE_CHAIN.explorerUrl}/tx/${txResult.hash}`}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -440,13 +451,9 @@ export function SendDialog({ fromAddress, trigger, onSuccess }: SendDialogProps)
                     >
                       <ExternalLink className="w-3 h-3" />
                       查看區塊瀏覽器
-                    </a>
-                  )}
-                </div>
-              )}
-              {note && (
-                <p className="text-xs text-keylio-text-muted mt-2">📝 {note}</p>
-              )}
+                    </a> : null}
+                </div> : null}
+              {note ? <p className="text-xs text-keylio-text-muted mt-2">📝 {note}</p> : null}
             </div>
             <Button onClick={reset} className="w-full bg-keylio-bg-tertiary hover:bg-keylio-bg-tertiary/80">
               完成

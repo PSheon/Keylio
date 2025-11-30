@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { ethers } from "ethers";
 import { withRetry } from "@/lib/chain";
-import { ERC20_ABI, formatTokenAmount } from "@/lib/tokens";
 import { logError } from "@/lib/errors";
+import { ERC20_ABI, formatTokenAmount } from "@/lib/tokens";
 
 /**
  * Hook to fetch ERC-20 token balance with retry logic

@@ -13,6 +13,9 @@ import {
   Search,
   ArrowUpDown,
 } from "lucide-react";
+import { toast } from "sonner";
+import { ReceiveDialog } from "@/components/transaction/ReceiveDialog";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -21,21 +24,18 @@ import {
   DialogTrigger,
   DialogBody,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { EmptyState } from "@/components/ui/empty-state";
-import { ReceiveDialog } from "@/components/transaction/ReceiveDialog";
-import { StablecoinRow, type StablecoinData } from "./StablecoinRow";
-import { useWalletStore } from "@/stores/useWalletStore";
-import { useSettingsStore } from "@/stores/useSettingsStore";
-import { getAllTokens, formatTokenAmount, getTokenValueUSD } from "@/lib/tokens";
 import { useMultiTokenBalance } from "@/hooks/useTokenBalance";
-import { formatUSD, formatCurrency, formatTokenBalance, formatPercent } from "@/lib/formatters";
-import { toast } from "sonner";
 import { staggerItem, staggerContainer } from "@/lib/animations";
-import { cn } from "@/lib/utils";
 import { ACTIVE_CHAIN } from "@/lib/chain";
+import { formatUSD, formatCurrency, formatTokenBalance, formatPercent } from "@/lib/formatters";
+import { getAllTokens, formatTokenAmount, getTokenValueUSD } from "@/lib/tokens";
+import { cn } from "@/lib/utils";
+import { useSettingsStore } from "@/stores/useSettingsStore";
+import { useWalletStore } from "@/stores/useWalletStore";
+import { StablecoinRow, type StablecoinData } from "./StablecoinRow";
 
 interface AssetDetailDialogProps {
   /** 觸發器元素 */
@@ -55,45 +55,45 @@ function AssetDetailDialogComponent({ trigger }: AssetDetailDialogProps) {
   const [showOtherAssets, setShowOtherAssets] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>('value-desc');
-  
+
   const wallets = useWalletStore((state) => state.wallets);
   const activeWalletId = useWalletStore((state) => state.activeWalletId);
   const hideBalancesSetting = useSettingsStore((state) => state.hideBalances);
-  
+
   // 將設定轉換為 boolean
   const hideBalances = hideBalancesSetting === 'always-hide' || hideBalancesSetting === 'hide-on-start';
-  
+
   const activeWallet = wallets.find(w => w.id === activeWalletId);
-  
+
   // Get all tokens
   const allTokens = useMemo(() => getAllTokens(), []);
-  const stablecoins = useMemo(() => 
+  const stablecoins = useMemo(() =>
     allTokens.filter(t => t.symbol === 'USDT' || t.symbol === 'USDC'),
     [allTokens]
   );
   const tokenAddresses = useMemo(() => allTokens.map(t => t.address), [allTokens]);
-  
+
   // Fetch balances
   const { data: balances, isLoading, error, refetch } = useMultiTokenBalance(
     tokenAddresses,
     activeWallet?.address
   );
-  
+
   // Calculate balances
   const { stablecoinData, totalStablecoinUSD, otherTokens, filteredOtherTokens } = useMemo(() => {
     let totalStablecoinUSD = 0;
     const stablecoinData: StablecoinData[] = [];
-    
+
     if (balances) {
       stablecoins.forEach((token) => {
         const balance = balances[token.address];
         if (!balance) return;
-        
+
         const formattedBalance = formatTokenAmount(balance, token.decimals);
         const valueUSD = getTokenValueUSD(formattedBalance, token.symbol);
-        
+
         totalStablecoinUSD += valueUSD;
-        
+
         stablecoinData.push({
           symbol: token.symbol,
           name: token.name,
@@ -104,33 +104,33 @@ function AssetDetailDialogComponent({ trigger }: AssetDetailDialogProps) {
           isMainstream: true,
         });
       });
-      
+
       // Calculate percentage for each stablecoin
       stablecoinData.forEach(coin => {
-        coin.percentage = totalStablecoinUSD > 0 
-          ? (coin.valueUSD / totalStablecoinUSD) * 100 
+        coin.percentage = totalStablecoinUSD > 0
+          ? (coin.valueUSD / totalStablecoinUSD) * 100
           : 0;
       });
     }
-    
+
     // Get other tokens
     const otherTokens = allTokens
       .filter(t => t.symbol !== 'USDT' && t.symbol !== 'USDC')
       .map(token => {
         const balance = balances?.[token.address];
         if (!balance) return null;
-        
+
         const formattedBalance = formatTokenAmount(balance, token.decimals);
         const valueUSD = getTokenValueUSD(formattedBalance, token.symbol);
-        
+
         if (parseFloat(formattedBalance) <= 0.0001) return null;
-        
+
         // Mock 24h change
         const mockChanges: Record<string, number> = {
           ETH: 2.34,
           WBTC: 1.56,
         };
-        
+
         return {
           symbol: token.symbol,
           name: token.name,
@@ -150,13 +150,13 @@ function AssetDetailDialogComponent({ trigger }: AssetDetailDialogProps) {
         change24h: number;
         contractAddress: string;
       }>;
-    
+
     // Filter by search query
     const filteredOtherTokens = otherTokens.filter(token =>
       token.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
       token.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
-    
+
     // Sort tokens
     filteredOtherTokens.sort((a, b) => {
       switch (sortBy) {
@@ -172,7 +172,7 @@ function AssetDetailDialogComponent({ trigger }: AssetDetailDialogProps) {
           return 0;
       }
     });
-    
+
     return {
       stablecoinData,
       totalStablecoinUSD,
@@ -180,7 +180,7 @@ function AssetDetailDialogComponent({ trigger }: AssetDetailDialogProps) {
       filteredOtherTokens,
     };
   }, [balances, stablecoins, allTokens, searchQuery, sortBy]);
-  
+
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
     try {
@@ -213,7 +213,7 @@ function AssetDetailDialogComponent({ trigger }: AssetDetailDialogProps) {
             </Button>
           </div>
         </DialogHeader>
-        
+
         <DialogBody className="space-y-4">
           {/* Search & Sort Bar */}
           <div className="flex items-center gap-2">
@@ -248,7 +248,7 @@ function AssetDetailDialogComponent({ trigger }: AssetDetailDialogProps) {
           <div className="bg-linear-to-br from-keylio-bg-tertiary to-keylio-bg-secondary rounded-2xl border border-keylio-border-primary p-5 relative overflow-hidden">
             {/* Decorative gradient */}
             <div className="absolute inset-0 bg-linear-to-br from-teal-500/5 to-transparent pointer-events-none" />
-            
+
             <div className="relative">
               <div className="flex items-center justify-between mb-3">
                 <div className="text-sm font-medium text-keylio-text-secondary">
@@ -259,7 +259,7 @@ function AssetDetailDialogComponent({ trigger }: AssetDetailDialogProps) {
                   {ACTIVE_CHAIN.displayName}
                 </div>
               </div>
-              
+
               {isLoading ? (
                 <Skeleton className="h-12 w-48 bg-keylio-bg-tertiary" />
               ) : error ? (
@@ -292,9 +292,9 @@ function AssetDetailDialogComponent({ trigger }: AssetDetailDialogProps) {
                   <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-teal-400 to-teal-300 mb-4">
                     {hideBalances ? "••••••" : formatUSD(totalStablecoinUSD)}
                   </h2>
-                  
+
                   {/* Stablecoin List using StablecoinRow */}
-                  <motion.div 
+                  <motion.div
                     variants={staggerContainer}
                     initial="hidden"
                     animate="visible"
@@ -313,7 +313,7 @@ function AssetDetailDialogComponent({ trigger }: AssetDetailDialogProps) {
               )}
             </div>
           </div>
-          
+
           {/* Other Assets - Collapsible */}
           {otherTokens.length > 0 && (
             <div className="bg-keylio-bg-secondary rounded-2xl border border-keylio-border-primary overflow-hidden">
@@ -340,17 +340,16 @@ function AssetDetailDialogComponent({ trigger }: AssetDetailDialogProps) {
                   )}
                 </div>
               </button>
-              
+
               <AnimatePresence>
-                {showOtherAssets && (
-                  <motion.div
+                {showOtherAssets ? <motion.div
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: "auto", opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
                     transition={{ duration: 0.2 }}
                     className="overflow-hidden"
                   >
-                    <motion.div 
+                    <motion.div
                       variants={staggerContainer}
                       initial="hidden"
                       animate="visible"
@@ -370,8 +369,7 @@ function AssetDetailDialogComponent({ trigger }: AssetDetailDialogProps) {
                         ))
                       )}
                     </motion.div>
-                  </motion.div>
-                )}
+                  </motion.div> : null}
               </AnimatePresence>
             </div>
           )}
@@ -398,9 +396,9 @@ function OtherAssetItem({ token, hideBalance }: OtherAssetItemProps) {
   const hasChange = token.change24h !== 0;
   const isPositive = token.change24h > 0;
   const isNegative = token.change24h < 0;
-  
+
   return (
-    <motion.div 
+    <motion.div
       variants={staggerItem}
       className="flex items-center justify-between p-3 bg-keylio-bg-tertiary/50 rounded-xl"
     >
@@ -409,8 +407,7 @@ function OtherAssetItem({ token, hideBalance }: OtherAssetItemProps) {
         <div>
           <div className="font-medium text-keylio-text-primary flex items-center gap-2">
             {token.symbol}
-            {hasChange && (
-              <span
+            {hasChange ? <span
                 className={cn(
                   "text-xs flex items-center gap-0.5",
                   isPositive && "text-green-400",
@@ -426,8 +423,7 @@ function OtherAssetItem({ token, hideBalance }: OtherAssetItemProps) {
                   <Minus className="w-3 h-3" />
                 )}
                 {formatPercent(Math.abs(token.change24h), { showSign: false })}
-              </span>
-            )}
+              </span> : null}
           </div>
           <div className="text-xs text-keylio-text-muted">
             {hideBalance ? "••••" : formatTokenBalance(token.balance)} {token.symbol}

@@ -15,9 +15,9 @@ interface ContactQRCodeProps {
  * Spec: 生成 Keylio 格式的 QR Code，供朋友掃描
  * 格式: { type: "keylio_contact", address: "0x...", name: "..." }
  */
-function ContactQRCodeComponent({ 
-  address, 
-  name, 
+function ContactQRCodeComponent({
+  address,
+  name,
   size = 200,
   className = "",
 }: ContactQRCodeProps) {
@@ -31,17 +31,17 @@ function ContactQRCodeComponent({
     };
     return JSON.stringify(data);
   }, [address, name]);
-  
+
   return (
     <div className={`bg-white p-4 rounded-xl inline-block ${className}`}>
       <QRCode
         value={qrData}
         size={size}
         level="M"
-        style={{ 
-          height: "auto", 
-          maxWidth: "100%", 
-          width: "100%" 
+        style={{
+          height: "auto",
+          maxWidth: "100%",
+          width: "100%"
         }}
       />
     </div>

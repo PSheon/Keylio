@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
 import {
   Dialog,
   DialogContent,
@@ -25,6 +24,7 @@ import {
   DrawerTrigger,
   DrawerClose,
 } from "@/components/ui/drawer";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { cn } from "@/lib/utils";
 
 // ============================================================================

@@ -1,9 +1,9 @@
 /**
  * HD Wallet Derivation Tests
- * 
- * These tests run in Node environment (not jsdom) because ethers.js 
+ *
+ * These tests run in Node environment (not jsdom) because ethers.js
  * HDNodeWallet has compatibility issues with jsdom's crypto implementation.
- * 
+ *
  * @vitest-environment node
  */
 
@@ -36,14 +36,14 @@ describe('HD Wallet Derivation', () => {
     it('should derive different addresses for different indices', () => {
       const wallet0 = deriveWallet(TEST_MNEMONIC, 0);
       const wallet1 = deriveWallet(TEST_MNEMONIC, 1);
-      
+
       expect(wallet0.address).not.toBe(wallet1.address);
     });
 
     it('should derive consistent addresses', () => {
       const wallet1 = deriveWallet(TEST_MNEMONIC, 0);
       const wallet2 = deriveWallet(TEST_MNEMONIC, 0);
-      
+
       expect(wallet1.address).toBe(wallet2.address);
     });
 
@@ -68,7 +68,7 @@ describe('HD Wallet Derivation', () => {
     it('should derive consistent xpub', () => {
       const xpub1 = deriveXpub(TEST_MNEMONIC);
       const xpub2 = deriveXpub(TEST_MNEMONIC);
-      
+
       expect(xpub1).toBe(xpub2);
     });
 
@@ -82,13 +82,13 @@ describe('HD Wallet Derivation', () => {
       const xpub = deriveXpub(TEST_MNEMONIC);
       const addressFromXpub = deriveAddressFromXpub(xpub, 0);
       const wallet = deriveWallet(TEST_MNEMONIC, 0);
-      
+
       expect(addressFromXpub).toBe(wallet.address);
     });
 
     it('should derive addresses at multiple indices', () => {
       const xpub = deriveXpub(TEST_MNEMONIC);
-      
+
       for (let i = 0; i < 5; i++) {
         const addressFromXpub = deriveAddressFromXpub(xpub, i);
         const wallet = deriveWallet(TEST_MNEMONIC, i);

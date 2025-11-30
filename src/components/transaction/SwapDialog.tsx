@@ -1,36 +1,36 @@
 "use client";
 
 import { useState, useMemo, memo } from "react";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
-import { toast } from "sonner";
-import { 
-  ArrowUpDown, 
-  Loader2, 
-  CheckCircle, 
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  ArrowUpDown,
+  Loader2,
+  CheckCircle,
   Info,
   Fingerprint,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useWalletStore } from "@/stores/useWalletStore";
+import { toast } from "sonner";
 import { useShallow } from 'zustand/react/shallow';
-import { formatUSD } from "@/lib/tokens";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 import { fadeInUp } from "@/lib/animations";
+import { formatUSD } from "@/lib/tokens";
+import { useWalletStore } from "@/stores/useWalletStore";
 
 interface SwapDialogProps {
   trigger?: React.ReactNode;
@@ -65,7 +65,7 @@ function SwapDialogComponent({ trigger, onSuccess }: SwapDialogProps) {
   const [amount, setAmount] = useState('');
   // isProcessing will be used for real DEX integration
   const [, setIsProcessing] = useState(false);
-  
+
   // Get wallet state
   const { wallets, activeWalletId } = useWalletStore(
     useShallow((state) => ({
@@ -75,22 +75,22 @@ function SwapDialogComponent({ trigger, onSuccess }: SwapDialogProps) {
   );
   // activeWallet will be used for real DEX integration
   void wallets; void activeWalletId;
-  
+
   // Get token data
   const fromTokenData = SWAP_TOKENS.find(t => t.symbol === fromToken);
   const toTokenData = SWAP_TOKENS.find(t => t.symbol === toToken);
-  
+
   // Calculate exchange
-  const exchangeRate = useMemo(() => 
-    getExchangeRate(fromToken, toToken), 
+  const exchangeRate = useMemo(() =>
+    getExchangeRate(fromToken, toToken),
     [fromToken, toToken]
   );
-  
+
   const receiveAmount = useMemo(() => {
     const inputAmount = parseFloat(amount) || 0;
     return (inputAmount * exchangeRate).toFixed(2);
   }, [amount, exchangeRate]);
-  
+
   // Price impact (mock - in production, calculate from DEX)
   const priceImpact = useMemo(() => {
     const inputAmount = parseFloat(amount) || 0;
@@ -98,19 +98,19 @@ function SwapDialogComponent({ trigger, onSuccess }: SwapDialogProps) {
     if (inputAmount < 1000) return 0.05;
     return 0.1;
   }, [amount]);
-  
+
   // Handlers
   const handleSwapTokens = () => {
     setFromToken(toToken);
     setToToken(fromToken);
   };
-  
+
   const handleMaxAmount = () => {
     if (fromTokenData) {
       setAmount(fromTokenData.balance.toString());
     }
   };
-  
+
   const handlePreview = () => {
     if (!amount || parseFloat(amount) <= 0) {
       toast.error("請輸入兌換金額");
@@ -122,16 +122,16 @@ function SwapDialogComponent({ trigger, onSuccess }: SwapDialogProps) {
     }
     setStep('preview');
   };
-  
+
   const handleConfirmSwap = async () => {
     setStep('processing');
     setIsProcessing(true);
-    
+
     try {
       // TODO: Implement actual swap logic with DEX
       // Simulate processing time
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       setStep('success');
       toast.success("兌換成功！");
       onSuccess?.();
@@ -142,7 +142,7 @@ function SwapDialogComponent({ trigger, onSuccess }: SwapDialogProps) {
       setIsProcessing(false);
     }
   };
-  
+
   const handleClose = () => {
     setIsOpen(false);
     // Reset state after animation
@@ -151,7 +151,7 @@ function SwapDialogComponent({ trigger, onSuccess }: SwapDialogProps) {
       setAmount('');
     }, 300);
   };
-  
+
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open);
     if (!open) {
@@ -161,7 +161,7 @@ function SwapDialogComponent({ trigger, onSuccess }: SwapDialogProps) {
       }, 300);
     }
   };
-  
+
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
@@ -171,14 +171,14 @@ function SwapDialogComponent({ trigger, onSuccess }: SwapDialogProps) {
           </Button>
         )}
       </DialogTrigger>
-      
+
       <DialogContent className="bg-keylio-bg-secondary border-keylio-border-primary max-w-md">
         <DialogHeader>
           <DialogTitle className="text-keylio-text-primary">
             {step === 'success' ? '兌換成功' : '兌換幣種'}
           </DialogTitle>
         </DialogHeader>
-        
+
         <AnimatePresence mode="wait">
           {/* Step 1: Input */}
           {step === 'input' && (
@@ -208,7 +208,7 @@ function SwapDialogComponent({ trigger, onSuccess }: SwapDialogProps) {
                       ))}
                     </SelectContent>
                   </Select>
-                  
+
                   <div className="flex-1 relative">
                     <Input
                       type="number"
@@ -231,7 +231,7 @@ function SwapDialogComponent({ trigger, onSuccess }: SwapDialogProps) {
                   餘額: {formatUSD(fromTokenData?.balance || 0)}
                 </p>
               </div>
-              
+
               {/* Swap Button */}
               <div className="flex justify-center">
                 <Button
@@ -243,7 +243,7 @@ function SwapDialogComponent({ trigger, onSuccess }: SwapDialogProps) {
                   <ArrowUpDown className="w-4 h-4 text-keylio-teal" />
                 </Button>
               </div>
-              
+
               {/* To Token */}
               <div className="space-y-2">
                 <Label className="text-keylio-text-secondary">兌換為</Label>
@@ -263,7 +263,7 @@ function SwapDialogComponent({ trigger, onSuccess }: SwapDialogProps) {
                       ))}
                     </SelectContent>
                   </Select>
-                  
+
                   <div className="flex-1">
                     <Input
                       type="text"
@@ -277,7 +277,7 @@ function SwapDialogComponent({ trigger, onSuccess }: SwapDialogProps) {
                   餘額: {formatUSD(toTokenData?.balance || 0)}
                 </p>
               </div>
-              
+
               {/* Exchange Info */}
               <div className="bg-keylio-bg-tertiary rounded-xl p-4 space-y-2">
                 <div className="flex items-center justify-between text-sm">
@@ -300,7 +300,7 @@ function SwapDialogComponent({ trigger, onSuccess }: SwapDialogProps) {
                   <span className="text-green-400">$0 (Plasma 零費用)</span>
                 </div>
               </div>
-              
+
               {/* Action Button */}
               <Button
                 onClick={handlePreview}
@@ -311,7 +311,7 @@ function SwapDialogComponent({ trigger, onSuccess }: SwapDialogProps) {
               </Button>
             </motion.div>
           )}
-          
+
           {/* Step 2: Preview */}
           {step === 'preview' && (
             <motion.div
@@ -334,7 +334,7 @@ function SwapDialogComponent({ trigger, onSuccess }: SwapDialogProps) {
                   {receiveAmount} {toToken}
                 </p>
               </div>
-              
+
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-keylio-text-muted">匯率</span>
@@ -347,7 +347,7 @@ function SwapDialogComponent({ trigger, onSuccess }: SwapDialogProps) {
                   <span className="text-green-400">$0</span>
                 </div>
               </div>
-              
+
               <div className="flex gap-3">
                 <Button
                   variant="outline"
@@ -366,7 +366,7 @@ function SwapDialogComponent({ trigger, onSuccess }: SwapDialogProps) {
               </div>
             </motion.div>
           )}
-          
+
           {/* Step 3: Processing */}
           {step === 'processing' && (
             <motion.div
@@ -383,7 +383,7 @@ function SwapDialogComponent({ trigger, onSuccess }: SwapDialogProps) {
               </p>
             </motion.div>
           )}
-          
+
           {/* Step 4: Success */}
           {step === 'success' && (
             <motion.div

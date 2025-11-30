@@ -1,6 +1,17 @@
 "use client";
 
 import { useState, useCallback, memo } from "react";
+import { ethers } from "ethers";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Wifi,
+  CheckCircle,
+  AlertCircle,
+  Smartphone,
+  X,
+} from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -8,19 +19,8 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { 
-  Wifi, 
-  CheckCircle, 
-  AlertCircle,
-  Smartphone,
-  X,
-} from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { toast } from "sonner";
-import { ethers } from "ethers";
-import { useWalletStore } from "@/stores/useWalletStore";
 import { fadeInUp } from "@/lib/animations";
+import { useWalletStore } from "@/stores/useWalletStore";
 
 interface NFCDialogProps {
   isOpen: boolean;
@@ -47,11 +47,11 @@ function NFCDialogComponent({ isOpen, onClose, onReceive, mode }: NFCDialogProps
   const [nfcState, setNfcState] = useState<NFCState>("idle");
   const [errorMessage, setErrorMessage] = useState("");
   const [receivedData, setReceivedData] = useState<NFCContactData | null>(null);
-  
+
   // 取得當前錢包資訊（用於發送模式）
   const getCurrentWallet = useWalletStore((state) => state.getCurrentWallet);
   const currentWallet = getCurrentWallet();
-  
+
   // 檢查 NFC 支援
   const checkNFCSupport = useCallback((): boolean => {
     if (!('NDEFReader' in window)) {
@@ -61,24 +61,24 @@ function NFCDialogComponent({ isOpen, onClose, onReceive, mode }: NFCDialogProps
     }
     return true;
   }, []);
-  
+
   // 開始 NFC 讀取（接收模式）
   const startReceiving = useCallback(async () => {
     if (!checkNFCSupport()) return;
-    
+
     try {
       setNfcState("waiting");
-      
+
       // @ts-expect-error - NDEFReader is not in TypeScript types yet
       const ndef = new NDEFReader();
       await ndef.scan();
-      
+
       ndef.addEventListener("reading", ({ message }: { message: { records: Array<{ recordType: string; data: ArrayBuffer }> } }) => {
         for (const record of message.records) {
           if (record.recordType === "text") {
             const decoder = new TextDecoder();
             const text = decoder.decode(record.data);
-            
+
             try {
               const data = JSON.parse(text);
               if (data.type === "keylio_contact" && data.address) {
@@ -104,19 +104,19 @@ function NFCDialogComponent({ isOpen, onClose, onReceive, mode }: NFCDialogProps
             }
           }
         }
-        
+
         toast.error("讀取到無效的 NFC 資料");
       });
-      
+
       ndef.addEventListener("readingerror", () => {
         setNfcState("error");
         setErrorMessage("NFC 讀取失敗，請重試");
       });
-      
+
     } catch (error: unknown) {
       console.error("NFC scan error:", error);
       setNfcState("error");
-      
+
       const errorObj = error as { name?: string; message?: string };
       if (errorObj.name === "NotAllowedError") {
         setErrorMessage("請允許 NFC 權限");
@@ -127,7 +127,7 @@ function NFCDialogComponent({ isOpen, onClose, onReceive, mode }: NFCDialogProps
       }
     }
   }, [checkNFCSupport]);
-  
+
   // 開始 NFC 寫入（發送模式）
   const startSending = useCallback(async () => {
     if (!checkNFCSupport()) return;
@@ -135,17 +135,17 @@ function NFCDialogComponent({ isOpen, onClose, onReceive, mode }: NFCDialogProps
       toast.error("請先建立或解鎖錢包");
       return;
     }
-    
+
     try {
       setNfcState("waiting");
-      
+
       const contactData: NFCContactData = {
         type: "keylio_contact",
         address: currentWallet.address,
         name: currentWallet.name,
         chainId: "plasma_mainnet",
       };
-      
+
       // @ts-expect-error - NDEFReader is not in TypeScript types yet
       const ndef = new NDEFReader();
       await ndef.write({
@@ -156,14 +156,14 @@ function NFCDialogComponent({ isOpen, onClose, onReceive, mode }: NFCDialogProps
           },
         ],
       });
-      
+
       setNfcState("success");
       toast.success("已成功寫入 NFC");
-      
+
     } catch (error: unknown) {
       console.error("NFC write error:", error);
       setNfcState("error");
-      
+
       const errorObj = error as { name?: string; message?: string };
       if (errorObj.name === "NotAllowedError") {
         setErrorMessage("請允許 NFC 權限");
@@ -174,7 +174,7 @@ function NFCDialogComponent({ isOpen, onClose, onReceive, mode }: NFCDialogProps
       }
     }
   }, [checkNFCSupport, currentWallet]);
-  
+
   // 關閉對話框 - 必須在 handleConfirm 前宣告
   const handleClose = useCallback(() => {
     setNfcState("idle");
@@ -182,7 +182,7 @@ function NFCDialogComponent({ isOpen, onClose, onReceive, mode }: NFCDialogProps
     setErrorMessage("");
     onClose();
   }, [onClose]);
-  
+
   // 開始 NFC 操作
   const handleStart = useCallback(() => {
     if (mode === "receive") {
@@ -191,7 +191,7 @@ function NFCDialogComponent({ isOpen, onClose, onReceive, mode }: NFCDialogProps
       startSending();
     }
   }, [mode, startReceiving, startSending]);
-  
+
   // 確認接收的聯絡人
   const handleConfirm = useCallback(() => {
     if (receivedData) {
@@ -199,14 +199,14 @@ function NFCDialogComponent({ isOpen, onClose, onReceive, mode }: NFCDialogProps
       handleClose();
     }
   }, [receivedData, onReceive, handleClose]);
-  
+
   // 重試
   const handleRetry = useCallback(() => {
     setNfcState("idle");
     setErrorMessage("");
     setReceivedData(null);
   }, []);
-  
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="bg-keylio-bg-secondary border-keylio-border-primary max-w-md">
@@ -226,12 +226,12 @@ function NFCDialogComponent({ isOpen, onClose, onReceive, mode }: NFCDialogProps
             </Button>
           </DialogTitle>
           <DialogDescription className="text-keylio-text-muted">
-            {mode === "receive" 
-              ? "將手機靠近對方的裝置以接收聯絡人資訊" 
+            {mode === "receive"
+              ? "將手機靠近對方的裝置以接收聯絡人資訊"
               : "將手機靠近對方的裝置以分享你的地址"}
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="py-4">
           <AnimatePresence mode="wait">
             {/* Idle State */}
@@ -248,8 +248,8 @@ function NFCDialogComponent({ isOpen, onClose, onReceive, mode }: NFCDialogProps
                   <Smartphone className="w-10 h-10 text-purple-400" />
                 </div>
                 <p className="text-keylio-text-secondary mb-6">
-                  {mode === "receive" 
-                    ? "準備好接收後，點擊開始按鈕" 
+                  {mode === "receive"
+                    ? "準備好接收後，點擊開始按鈕"
                     : "準備好分享後，點擊開始按鈕"}
                 </p>
                 <Button
@@ -260,7 +260,7 @@ function NFCDialogComponent({ isOpen, onClose, onReceive, mode }: NFCDialogProps
                 </Button>
               </motion.div>
             )}
-            
+
             {/* Waiting State */}
             {nfcState === "waiting" && (
               <motion.div
@@ -295,7 +295,7 @@ function NFCDialogComponent({ isOpen, onClose, onReceive, mode }: NFCDialogProps
                 </Button>
               </motion.div>
             )}
-            
+
             {/* Unsupported State */}
             {nfcState === "unsupported" && (
               <motion.div
@@ -324,7 +324,7 @@ function NFCDialogComponent({ isOpen, onClose, onReceive, mode }: NFCDialogProps
                 </Button>
               </motion.div>
             )}
-            
+
             {/* Error State */}
             {nfcState === "error" && (
               <motion.div
@@ -361,10 +361,9 @@ function NFCDialogComponent({ isOpen, onClose, onReceive, mode }: NFCDialogProps
                 </div>
               </motion.div>
             )}
-            
+
             {/* Success State - Receive Mode */}
-            {nfcState === "success" && mode === "receive" && receivedData && (
-              <motion.div
+            {nfcState === "success" && mode === "receive" && receivedData ? <motion.div
                 key="success-receive"
                 variants={fadeInUp}
                 initial="initial"
@@ -378,16 +377,14 @@ function NFCDialogComponent({ isOpen, onClose, onReceive, mode }: NFCDialogProps
                 <p className="text-keylio-text-primary font-medium mb-4">
                   成功接收！
                 </p>
-                
+
                 <div className="bg-keylio-bg-tertiary rounded-xl p-4 mb-6 text-left">
-                  {receivedData.name && (
-                    <div className="mb-2">
+                  {receivedData.name ? <div className="mb-2">
                       <p className="text-xs text-keylio-text-muted">名稱</p>
                       <p className="text-keylio-text-primary font-medium">
                         {receivedData.name}
                       </p>
-                    </div>
-                  )}
+                    </div> : null}
                   <div>
                     <p className="text-xs text-keylio-text-muted">地址</p>
                     <p className="text-keylio-text-primary font-mono text-sm break-all">
@@ -395,7 +392,7 @@ function NFCDialogComponent({ isOpen, onClose, onReceive, mode }: NFCDialogProps
                     </p>
                   </div>
                 </div>
-                
+
                 <div className="flex gap-3">
                   <Button
                     variant="outline"
@@ -411,9 +408,8 @@ function NFCDialogComponent({ isOpen, onClose, onReceive, mode }: NFCDialogProps
                     新增聯絡人
                   </Button>
                 </div>
-              </motion.div>
-            )}
-            
+              </motion.div> : null}
+
             {/* Success State - Send Mode */}
             {nfcState === "success" && mode === "send" && (
               <motion.div

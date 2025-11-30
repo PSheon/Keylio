@@ -41,10 +41,10 @@ export function BottomNavigation() {
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-keylio-border-primary bg-keylio-bg-secondary/95 backdrop-blur-xl safe-area-inset-bottom">
       <div className="flex items-center justify-around h-16">
         {navItems.map((item) => {
-          const isActive = pathname === item.path || 
+          const isActive = pathname === item.path ||
             (item.path === "/" && pathname === "/") ||
             (item.path !== "/" && pathname.startsWith(item.path));
-          
+
           return (
             <button
               key={item.path}
@@ -53,29 +53,27 @@ export function BottomNavigation() {
                 "flex flex-col items-center justify-center gap-1 w-full h-full",
                 "transition-colors duration-200 touch-manipulation",
                 "active:scale-95",
-                isActive 
-                  ? "text-keylio-teal" 
+                isActive
+                  ? "text-keylio-teal"
                   : "text-keylio-text-secondary hover:text-keylio-text-primary"
               )}
             >
               <div className="relative">
-                <item.icon 
-                  size={22} 
+                <item.icon
+                  size={22}
                   className={cn(
                     "transition-transform duration-200",
                     isActive && "scale-110"
-                  )} 
+                  )}
                 />
                 {/* Active indicator dot */}
-                {isActive && (
-                  <motion.div
+                {isActive ? <motion.div
                     layoutId="bottomNavIndicator"
                     className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-keylio-teal"
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  />
-                )}
+                  /> : null}
               </div>
               <span className={cn(
                 "text-[10px] font-medium",

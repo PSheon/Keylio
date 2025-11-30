@@ -41,7 +41,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
         className="relative z-10 text-center"
       >
         {/* Logo Animation */}
-        <motion.div 
+        <motion.div
           className="relative w-32 h-32 mx-auto mb-8 flex items-center justify-center"
           initial={{ rotate: -180, opacity: 0 }}
           animate={{ rotate: 0, opacity: 1 }}
@@ -49,7 +49,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
         >
           {/* Glow Effect */}
           <div className="absolute inset-0 bg-teal-500/30 rounded-full blur-xl animate-pulse" />
-          
+
           <div className="relative w-full h-full rounded-2xl bg-linear-to-br from-teal-400 to-teal-600 flex items-center justify-center shadow-2xl shadow-teal-500/40 border border-teal-300/20 backdrop-blur-sm">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -69,7 +69,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
         </motion.div>
 
         {/* Text Reveal */}
-        <motion.h1 
+        <motion.h1
           className="text-5xl md:text-6xl font-bold mb-4 tracking-tighter bg-clip-text text-transparent bg-linear-to-r from-white via-teal-200 to-teal-400"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -78,7 +78,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
           Keylio
         </motion.h1>
 
-        <motion.p 
+        <motion.p
           className="text-xl text-gray-400 mb-10 font-light tracking-wide"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -102,8 +102,8 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
           className="mt-8 flex items-center justify-center gap-2 text-sm text-teal-400/80 font-medium border border-teal-500/20 rounded-full px-4 py-1.5 bg-teal-950/30 backdrop-blur-md"
         >
           <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-500"></span>
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-500" />
           </span>
           Initializing Secure Environment...
         </motion.div>

@@ -1,11 +1,11 @@
 /**
  * Contacts 相關組件匯出
- * 
+ *
  * 主要元件：
  * - ContactPickerDialog: 統一選擇聯絡人對話框（推薦使用）
  * - ContactRow: 統一聯絡人列表行元件
  * - AddContactDialog / EditContactDialog: 新增/編輯聯絡人
- * 
+ *
  * 輔助元件：
  * - ContactQRCode: 聯絡人 QR Code 顯示
  * - QRScanner / NFCDialog: 掃描/NFC 交換聯絡人

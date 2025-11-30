@@ -1,6 +1,6 @@
 /**
  * 統一格式化工具函數
- * 
+ *
  * 此模組提供標準化的數字、金額、百分比和地址格式化功能，
  * 確保整個應用程式中顯示格式的一致性。
  */
@@ -14,7 +14,7 @@ export function formatUSD(amount: number | null | undefined): string {
   if (amount === null || amount === undefined || !Number.isFinite(amount)) {
     return "$0.00";
   }
-  
+
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",

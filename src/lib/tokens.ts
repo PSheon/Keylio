@@ -95,18 +95,18 @@ export const getTokenValueUSD = (
   tokenSymbol: string
 ): number => {
   const numAmount = parseFloat(amount);
-  
+
   // For stablecoins, assume 1:1 with USD
   if (["USDT", "USDC", "DAI"].includes(tokenSymbol.toUpperCase())) {
     return numAmount;
   }
-  
+
   // For ETH, would need price oracle in production
   // Using example rate of $2000/ETH
   if (tokenSymbol.toUpperCase() === "ETH") {
     return numAmount * 2000;
   }
-  
+
   return numAmount;
 };
 

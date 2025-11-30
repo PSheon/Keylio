@@ -1,22 +1,22 @@
 "use client";
 
 import { useState, memo } from "react";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
-} from "@/components/ui/dialog";
+import { ethers } from "ethers";
+import { motion, AnimatePresence } from "framer-motion";
+import { Plus, CheckCircle } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
-import { Plus, CheckCircle } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import db from "@/lib/storage/db";
-import { ethers } from "ethers";
 import { fadeInUp } from "@/lib/animations";
+import db from "@/lib/storage/db";
 
 interface AddContactDialogProps {
   trigger?: React.ReactNode;
@@ -35,8 +35,8 @@ const CONTACT_EMOJIS = ['👤', '👩', '👨', '🧑', '👧', '👦', '🤵', 
  * 新增聯絡人對話框
  * Spec: 手動新增或從 QR/NFC 導入
  */
-function AddContactDialogComponent({ 
-  trigger, 
+function AddContactDialogComponent({
+  trigger,
   onSuccess,
   initialAddress = "",
   initialName = "",
@@ -49,7 +49,7 @@ function AddContactDialogComponent({
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [addressError, setAddressError] = useState('');
-  
+
   // Validate address
   const validateAddress = (addr: string): boolean => {
     if (!addr) return false;
@@ -60,7 +60,7 @@ function AddContactDialogComponent({
       return false;
     }
   };
-  
+
   const handleAddressChange = (value: string) => {
     setAddress(value);
     if (value && !validateAddress(value)) {
@@ -69,7 +69,7 @@ function AddContactDialogComponent({
       setAddressError('');
     }
   };
-  
+
   const handleSubmit = async () => {
     // Validation
     if (!name.trim()) {
@@ -80,9 +80,9 @@ function AddContactDialogComponent({
       toast.error("請輸入有效的錢包地址");
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       // Check if contact already exists
       const existing = await db.contacts.where('address').equalsIgnoreCase(address).first();
@@ -91,7 +91,7 @@ function AddContactDialogComponent({
         setIsSubmitting(false);
         return;
       }
-      
+
       // Add to IndexedDB
       await db.contacts.add({
         name: name.trim(),
@@ -100,7 +100,7 @@ function AddContactDialogComponent({
         notes: notes.trim() || undefined,
         createdAt: Date.now(),
       });
-      
+
       setStep('success');
       toast.success("已新增聯絡人");
       onSuccess?.();
@@ -111,7 +111,7 @@ function AddContactDialogComponent({
       setIsSubmitting(false);
     }
   };
-  
+
   const handleClose = () => {
     setIsOpen(false);
     // Reset state after animation
@@ -124,7 +124,7 @@ function AddContactDialogComponent({
       setAddressError('');
     }, 300);
   };
-  
+
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open);
     if (open) {
@@ -142,7 +142,7 @@ function AddContactDialogComponent({
       }, 300);
     }
   };
-  
+
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
@@ -153,14 +153,14 @@ function AddContactDialogComponent({
           </Button>
         )}
       </DialogTrigger>
-      
+
       <DialogContent className="bg-keylio-bg-secondary border-keylio-border-primary max-w-md">
         <DialogHeader>
           <DialogTitle className="text-keylio-text-primary">
             {step === 'success' ? '新增成功' : '新增聯絡人'}
           </DialogTitle>
         </DialogHeader>
-        
+
         <AnimatePresence mode="wait">
           {/* Input Step */}
           {step === 'input' && (
@@ -181,8 +181,8 @@ function AddContactDialogComponent({
                       type="button"
                       onClick={() => setEmoji(e)}
                       className={`w-10 h-10 rounded-lg text-xl flex items-center justify-center transition-all ${
-                        emoji === e 
-                          ? 'bg-keylio-teal/20 border-2 border-keylio-teal' 
+                        emoji === e
+                          ? 'bg-keylio-teal/20 border-2 border-keylio-teal'
                           : 'bg-keylio-bg-tertiary border border-keylio-border-primary hover:border-keylio-teal/50'
                       }`}
                     >
@@ -191,7 +191,7 @@ function AddContactDialogComponent({
                   ))}
                 </div>
               </div>
-              
+
               {/* Name Input */}
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-keylio-text-secondary">
@@ -205,7 +205,7 @@ function AddContactDialogComponent({
                   className="bg-keylio-bg-tertiary border-keylio-border-primary"
                 />
               </div>
-              
+
               {/* Address Input */}
               <div className="space-y-2">
                 <Label htmlFor="address" className="text-keylio-text-secondary">
@@ -220,11 +220,9 @@ function AddContactDialogComponent({
                     addressError ? 'border-red-500' : ''
                   }`}
                 />
-                {addressError && (
-                  <p className="text-xs text-red-400">{addressError}</p>
-                )}
+                {addressError ? <p className="text-xs text-red-400">{addressError}</p> : null}
               </div>
-              
+
               {/* Notes Input */}
               <div className="space-y-2">
                 <Label htmlFor="notes" className="text-keylio-text-secondary">
@@ -238,7 +236,7 @@ function AddContactDialogComponent({
                   className="bg-keylio-bg-tertiary border-keylio-border-primary"
                 />
               </div>
-              
+
               {/* Submit Button */}
               <Button
                 onClick={handleSubmit}
@@ -259,7 +257,7 @@ function AddContactDialogComponent({
               </Button>
             </motion.div>
           )}
-          
+
           {/* Success Step */}
           {step === 'success' && (
             <motion.div

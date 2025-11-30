@@ -1,6 +1,6 @@
 /**
  * Crypto Module Tests
- * 
+ *
  * Tests for mnemonic generation and encryption/decryption.
  * HD wallet derivation tests are in hdwallet.test.ts (uses node environment)
  */
@@ -61,7 +61,7 @@ describe('Mnemonic Utilities', () => {
     it('should be a type guard that validates mnemonic', () => {
       const validInput: unknown = TEST_MNEMONIC;
       const invalidInput: unknown = 'invalid';
-      
+
       expect(isValidMnemonic(validInput)).toBe(true);
       expect(isValidMnemonic(invalidInput)).toBe(false);
     });
@@ -88,7 +88,7 @@ describe('Encryption & Decryption', () => {
   describe('encryptData', () => {
     it('should encrypt data and return expected structure', async () => {
       const encrypted = await encryptData(testData, testPassword);
-      
+
       expect(encrypted).toHaveProperty('ciphertext');
       expect(encrypted).toHaveProperty('iv');
       expect(encrypted).toHaveProperty('salt');
@@ -98,7 +98,7 @@ describe('Encryption & Decryption', () => {
     it('should produce different ciphertext for same input (due to random IV/salt)', async () => {
       const encrypted1 = await encryptData(testData, testPassword);
       const encrypted2 = await encryptData(testData, testPassword);
-      
+
       expect(encrypted1.ciphertext).not.toBe(encrypted2.ciphertext);
       expect(encrypted1.iv).not.toBe(encrypted2.iv);
       expect(encrypted1.salt).not.toBe(encrypted2.salt);
@@ -114,13 +114,13 @@ describe('Encryption & Decryption', () => {
     it('should decrypt data correctly', async () => {
       const encrypted = await encryptData(testData, testPassword);
       const decrypted = await decryptData(encrypted, testPassword);
-      
+
       expect(decrypted).toBe(testData);
     });
 
     it('should throw error with wrong password', async () => {
       const encrypted = await encryptData(testData, testPassword);
-      
+
       await expect(decryptData(encrypted, 'wrongpassword')).rejects.toThrow();
     });
 
@@ -128,7 +128,7 @@ describe('Encryption & Decryption', () => {
       const mnemonic = generateMnemonic();
       const encrypted = await encryptData(mnemonic, testPassword);
       const decrypted = await decryptData(encrypted, testPassword);
-      
+
       expect(decrypted).toBe(mnemonic);
       expect(validateMnemonic(decrypted)).toBe(true);
     });
@@ -137,10 +137,10 @@ describe('Encryption & Decryption', () => {
   describe('encryption security', () => {
     it('should produce base64 encoded output', async () => {
       const encrypted = await encryptData(testData, testPassword);
-      
+
       // Base64 regex pattern
       const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
-      
+
       expect(base64Regex.test(encrypted.ciphertext)).toBe(true);
       expect(base64Regex.test(encrypted.iv)).toBe(true);
       expect(base64Regex.test(encrypted.salt)).toBe(true);

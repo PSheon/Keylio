@@ -10,8 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useSettingsStore } from "@/stores/useSettingsStore";
 import { formatCurrency } from "@/lib/formatters";
+import { useSettingsStore } from "@/stores/useSettingsStore";
 
 /** 預設金額選項 */
 const THRESHOLD_OPTIONS = [100, 500, 1000, 2500, 5000, 10000];
@@ -39,8 +39,8 @@ function LargeTransferSettingsComponent() {
           </p>
         </div>
       </div>
-      <Select 
-        value={threshold.toString()} 
+      <Select
+        value={threshold.toString()}
         onValueChange={(val) => setThreshold(Number(val))}
       >
         <SelectTrigger className="w-[120px] bg-keylio-bg-tertiary border-keylio-border-primary text-keylio-text-primary">
@@ -63,4 +63,3 @@ function LargeTransferSettingsComponent() {
 }
 
 export const LargeTransferSettings = memo(LargeTransferSettingsComponent);
-

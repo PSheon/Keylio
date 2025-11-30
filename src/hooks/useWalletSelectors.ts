@@ -1,6 +1,6 @@
+import { useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useWalletStore } from "@/stores/useWalletStore";
-import { useMemo } from "react";
 
 /**
  * Pre-defined selector for active wallet
@@ -13,11 +13,10 @@ export function useActiveWallet() {
       activeWalletId: state.activeWalletId,
     }))
   );
-  
+
   const activeWallet = useMemo(() => {
     return wallets.find((w) => w.id === activeWalletId) || null;
   }, [wallets, activeWalletId]);
-  
+
   return { wallets, activeWalletId, activeWallet };
 }
-

@@ -2,6 +2,7 @@
 
 import { memo } from "react";
 import { Globe } from "lucide-react";
+import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -11,7 +12,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useSettingsStore } from "@/stores/useSettingsStore";
-import { toast } from "sonner";
 
 /** 語言選項 */
 const LANGUAGE_OPTIONS = [

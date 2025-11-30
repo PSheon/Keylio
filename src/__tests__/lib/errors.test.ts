@@ -16,7 +16,7 @@ describe('KeylioError', () => {
   describe('constructor', () => {
     it('should create error with correct code and message', () => {
       const error = new KeylioError(ErrorCode.AUTH_PASSWORD_WRONG);
-      
+
       expect(error.code).toBe(ErrorCode.AUTH_PASSWORD_WRONG);
       expect(error.message).toBe(ERROR_MESSAGES[ErrorCode.AUTH_PASSWORD_WRONG]);
       expect(error.name).toBe('KeylioError');
@@ -25,7 +25,7 @@ describe('KeylioError', () => {
     it('should include context when provided', () => {
       const context = { attempt: 1, userId: 'test' };
       const error = new KeylioError(ErrorCode.TX_SIGNING_FAILED, context);
-      
+
       expect(error.context).toEqual(context);
     });
 
@@ -36,7 +36,7 @@ describe('KeylioError', () => {
         undefined,
         originalError
       );
-      
+
       expect(error.originalError).toBe(originalError);
     });
   });
@@ -46,7 +46,7 @@ describe('KeylioError', () => {
       const context = { test: 'value' };
       const error = new KeylioError(ErrorCode.WALLET_NOT_FOUND, context);
       const json = error.toJSON();
-      
+
       expect(json).toEqual({
         name: 'KeylioError',
         code: ErrorCode.WALLET_NOT_FOUND,
@@ -80,14 +80,14 @@ describe('wrapError', () => {
   it('should return KeylioError unchanged', () => {
     const keylioError = new KeylioError(ErrorCode.TX_REJECTED);
     const wrapped = wrapError(keylioError);
-    
+
     expect(wrapped).toBe(keylioError);
   });
 
   it('should wrap regular Error into KeylioError', () => {
     const error = new Error('Something went wrong');
     const wrapped = wrapError(error, ErrorCode.UNKNOWN);
-    
+
     expect(isKeylioError(wrapped)).toBe(true);
     expect(wrapped.code).toBe(ErrorCode.UNKNOWN);
     expect(wrapped.originalError).toBe(error);
@@ -95,14 +95,14 @@ describe('wrapError', () => {
 
   it('should wrap string error', () => {
     const wrapped = wrapError('String error', ErrorCode.UNKNOWN);
-    
+
     expect(isKeylioError(wrapped)).toBe(true);
   });
 
   it('should infer error code from error message', () => {
     const insufficientFundsError = new Error('insufficient funds for transaction');
     const wrapped = wrapError(insufficientFundsError);
-    
+
     expect(wrapped.code).toBe(ErrorCode.TX_INSUFFICIENT_BALANCE);
   });
 
@@ -110,7 +110,7 @@ describe('wrapError', () => {
     const error = new Error('Test');
     const context = { operation: 'test' };
     const wrapped = wrapError(error, ErrorCode.UNKNOWN, context);
-    
+
     expect(wrapped.context).toEqual(context);
   });
 });
@@ -119,21 +119,21 @@ describe('getErrorMessage', () => {
   it('should return message for KeylioError', () => {
     const error = new KeylioError(ErrorCode.AUTH_SESSION_EXPIRED);
     const message = getErrorMessage(error);
-    
+
     expect(message).toBe(ERROR_MESSAGES[ErrorCode.AUTH_SESSION_EXPIRED]);
   });
 
   it('should return wrapped message for regular Error', () => {
     const error = new Error('Network timeout occurred');
     const message = getErrorMessage(error);
-    
+
     expect(typeof message).toBe('string');
     expect(message.length).toBeGreaterThan(0);
   });
 
   it('should return unknown message for non-error values', () => {
     const message = getErrorMessage('string error');
-    
+
     expect(message).toBe(ERROR_MESSAGES[ErrorCode.UNKNOWN]);
   });
 });
@@ -143,7 +143,7 @@ describe('ERROR_MESSAGES', () => {
     const errorCodes = Object.values(ErrorCode).filter(
       (v) => typeof v === 'number'
     );
-    
+
     errorCodes.forEach((code) => {
       expect(ERROR_MESSAGES[code as ErrorCode]).toBeDefined();
       expect(typeof ERROR_MESSAGES[code as ErrorCode]).toBe('string');
@@ -153,7 +153,7 @@ describe('ERROR_MESSAGES', () => {
   it('should have messages in Traditional Chinese', () => {
     // Check a few messages contain Chinese characters
     const chineseRegex = /[\u4e00-\u9fa5]/;
-    
+
     expect(chineseRegex.test(ERROR_MESSAGES[ErrorCode.AUTH_PASSWORD_WRONG])).toBe(true);
     expect(chineseRegex.test(ERROR_MESSAGES[ErrorCode.TX_INSUFFICIENT_BALANCE])).toBe(true);
   });

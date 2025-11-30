@@ -1,35 +1,35 @@
 "use client";
 
 import { useState, memo, useCallback, useMemo } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Search, 
-  QrCode, 
-  Wifi, 
+import {
+  Search,
+  QrCode,
+  Wifi,
   Star,
   Clock,
   Upload,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { EmptyState } from "@/components/ui/empty-state";
-import { ContactRow } from "@/components/contacts/ContactRow";
+import { toast } from "sonner";
 import { AddContactDialog } from "@/components/contacts/AddContactDialog";
+import { ContactRow } from "@/components/contacts/ContactRow";
+import { EditContactDialog } from "@/components/contacts/EditContactDialog";
+import { NFCDialog, type NFCContactData } from "@/components/contacts/NFCDialog";
 import { QRScanner } from "@/components/contacts/QRScanner";
 import { ShareAddressDialog } from "@/components/contacts/ShareAddressDialog";
-import { NFCDialog, type NFCContactData } from "@/components/contacts/NFCDialog";
-import { EditContactDialog } from "@/components/contacts/EditContactDialog";
 import { SendDialog } from "@/components/transaction/SendDialog";
-import db, { type Contact } from "@/lib/storage/db";
-import { useLiveQuery } from "dexie-react-hooks";
-import { toast } from "sonner";
-import { fadeInUp, staggerContainer } from "@/lib/animations";
-import { useWalletStore } from "@/stores/useWalletStore";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Input } from "@/components/ui/input";
 import { DashboardLayout } from "@/components/wallet/DashboardLayout";
+import { fadeInUp, staggerContainer } from "@/lib/animations";
+import db, { type Contact } from "@/lib/storage/db";
+import { useWalletStore } from "@/stores/useWalletStore";
 
 /**
  * 聯絡簿頁面 - 統一版型
- * 
+ *
  * 固定版型：
  * - 上方：搜尋框 + 新增聯絡人主按鈕
  * - 中間：聯絡人列表（收藏置頂、最近使用、全部）
@@ -42,41 +42,41 @@ function ContactsPage() {
   const [showNFCDialog, setShowNFCDialog] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [sendingToContact, setSendingToContact] = useState<Contact | null>(null);
-  
+
   // Get active wallet for SendDialog
   const wallets = useWalletStore((state) => state.wallets);
   const activeWalletId = useWalletStore((state) => state.activeWalletId);
   const activeWallet = wallets.find(w => w.id === activeWalletId);
-  
+
   // Fetch contacts from IndexedDB
   const contacts = useLiveQuery(
     () => db.contacts.orderBy('lastUsed').reverse().toArray(),
     []
   );
-  
+
   // Filter and categorize contacts
   const { favorites, recentlyUsed, others, hasContacts, hasFilteredResults } = useMemo(() => {
     if (!contacts) return { favorites: [], recentlyUsed: [], others: [], hasContacts: false, hasFilteredResults: false };
-    
-    const filtered = contacts.filter(contact => 
+
+    const filtered = contacts.filter(contact =>
       contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       contact.address.toLowerCase().includes(searchQuery.toLowerCase())
     );
-    
+
     // Separate by category
     const favorites = filtered.filter(c => c.isFavorite);
     const recentlyUsed = filtered.filter(c => c.lastUsed && !c.isFavorite);
     const others = filtered.filter(c => !c.lastUsed && !c.isFavorite);
-    
-    return { 
-      favorites, 
-      recentlyUsed, 
-      others, 
+
+    return {
+      favorites,
+      recentlyUsed,
+      others,
       hasContacts: contacts.length > 0,
       hasFilteredResults: filtered.length > 0
     };
   }, [contacts, searchQuery]);
-  
+
   // QR Code scan result handler
   const handleScan = useCallback(async (data: { type: string; address: string; name?: string }) => {
     try {
@@ -85,13 +85,13 @@ function ContactsPage() {
         .where('address')
         .equalsIgnoreCase(data.address)
         .first();
-      
+
       if (existing) {
         toast.info(`${data.name || '此聯絡人'} 已經在聯絡簿中`);
         setShowScanner(false);
         return;
       }
-      
+
       // Add new contact
       await db.contacts.add({
         name: data.name || `聯絡人 ${data.address.slice(0, 6)}`,
@@ -99,7 +99,7 @@ function ContactsPage() {
         emoji: "👤",
         createdAt: Date.now(),
       });
-      
+
       toast.success(`已添加聯絡人 ${data.name || data.address.slice(0, 6)}`);
       setShowScanner(false);
     } catch (error) {
@@ -107,7 +107,7 @@ function ContactsPage() {
       toast.error("添加聯絡人失敗");
     }
   }, []);
-  
+
   // NFC receive handler
   const handleNFCReceive = useCallback(async (data: NFCContactData) => {
     try {
@@ -115,35 +115,35 @@ function ContactsPage() {
         .where('address')
         .equalsIgnoreCase(data.address)
         .first();
-      
+
       if (existing) {
         toast.info(`${data.name || '此聯絡人'} 已經在聯絡簿中`);
         return;
       }
-      
+
       await db.contacts.add({
         name: data.name || `聯絡人 ${data.address.slice(0, 6)}`,
         address: data.address,
         emoji: "👤",
         createdAt: Date.now(),
       });
-      
+
       toast.success(`已添加聯絡人 ${data.name || data.address.slice(0, 6)}`);
     } catch (error) {
       console.error("Failed to add contact:", error);
       toast.error("添加聯絡人失敗");
     }
   }, []);
-  
+
   // Contact action handlers
   const handleSendToContact = useCallback((contact: Contact) => {
     setSendingToContact(contact);
   }, []);
-  
+
   const handleEditContact = useCallback((contact: Contact) => {
     setEditingContact(contact);
   }, []);
-  
+
   const handleDeleteContact = useCallback(async (contact: Contact) => {
     if (!contact.id) return;
     try {
@@ -153,7 +153,7 @@ function ContactsPage() {
       toast.error("刪除失敗");
     }
   }, []);
-  
+
   const handleToggleFavorite = useCallback(async (contact: Contact) => {
     if (!contact.id) return;
     try {
@@ -163,10 +163,10 @@ function ContactsPage() {
       toast.error("操作失敗");
     }
   }, []);
-  
+
   return (
     <DashboardLayout>
-      <motion.div 
+      <motion.div
         className="space-y-6"
         variants={staggerContainer}
         initial="initial"
@@ -179,7 +179,7 @@ function ContactsPage() {
             <h1 className="text-2xl font-bold text-keylio-text-primary">聯絡簿</h1>
             <AddContactDialog />
           </div>
-          
+
           {/* Search Bar */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-keylio-text-muted" />
@@ -191,13 +191,13 @@ function ContactsPage() {
             />
           </div>
         </motion.div>
-        
+
         {/* ===== 中間區域：聯絡人列表 ===== */}
         <motion.div variants={fadeInUp} className="space-y-6">
           <AnimatePresence mode="popLayout">
             {/* Favorites Section */}
             {favorites.length > 0 && (
-              <motion.div 
+              <motion.div
                 key="favorites"
                 variants={fadeInUp}
                 className="space-y-3"
@@ -225,10 +225,10 @@ function ContactsPage() {
                 </div>
               </motion.div>
             )}
-            
+
             {/* Recently Used Section */}
             {recentlyUsed.length > 0 && (
-              <motion.div 
+              <motion.div
                 key="recent"
                 variants={fadeInUp}
                 className="space-y-3"
@@ -252,10 +252,10 @@ function ContactsPage() {
                 </div>
               </motion.div>
             )}
-            
+
             {/* All Others Section */}
             {others.length > 0 && (
-              <motion.div 
+              <motion.div
                 key="others"
                 variants={fadeInUp}
                 className="space-y-3"
@@ -278,10 +278,9 @@ function ContactsPage() {
                 </div>
               </motion.div>
             )}
-            
+
             {/* No Search Results */}
-            {hasContacts && !hasFilteredResults && searchQuery && (
-              <motion.div 
+            {hasContacts && !hasFilteredResults && searchQuery ? <motion.div
                 key="no-results"
                 variants={fadeInUp}
                 className="py-8"
@@ -292,11 +291,10 @@ function ContactsPage() {
                   description={`找不到「${searchQuery}」相關的聯絡人`}
                   size="md"
                 />
-              </motion.div>
-            )}
+              </motion.div> : null}
           </AnimatePresence>
         </motion.div>
-        
+
         {/* ===== 下方區域：空狀態 CTA ===== */}
         {!hasContacts && (
           <motion.div variants={fadeInUp} className="space-y-4">
@@ -309,7 +307,7 @@ function ContactsPage() {
                 size="lg"
               />
             </div>
-            
+
             {/* Quick Add Actions */}
             <div className="grid grid-cols-2 gap-3">
               <button
@@ -324,7 +322,7 @@ function ContactsPage() {
                   <div className="text-xs text-keylio-text-muted">快速添加好友</div>
                 </div>
               </button>
-              
+
               <button
                 onClick={() => setShowNFCDialog(true)}
                 className="flex items-center gap-3 p-4 bg-keylio-bg-secondary hover:bg-keylio-bg-tertiary rounded-2xl border border-keylio-border-primary transition-colors"
@@ -338,7 +336,7 @@ function ContactsPage() {
                 </div>
               </button>
             </div>
-            
+
             {/* Import from contacts (future feature) */}
             <button
               onClick={() => toast.info("即將推出：匯入通訊錄")}
@@ -349,10 +347,9 @@ function ContactsPage() {
             </button>
           </motion.div>
         )}
-        
+
         {/* Quick Add Buttons - Only show when has contacts */}
-        {hasContacts && (
-          <motion.div variants={fadeInUp} className="flex gap-2">
+        {hasContacts ? <motion.div variants={fadeInUp} className="flex gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -371,25 +368,24 @@ function ContactsPage() {
               <Wifi className="w-4 h-4 mr-1.5" />
               NFC 交換
             </Button>
-          </motion.div>
-        )}
+          </motion.div> : null}
       </motion.div>
-      
+
       {/* ===== Dialogs ===== */}
-      
+
       {/* QR Scanner Dialog */}
       <QRScanner
         isOpen={showScanner}
         onClose={() => setShowScanner(false)}
         onScan={handleScan}
       />
-      
+
       {/* Share Address Dialog */}
       <ShareAddressDialog
         open={showShareDialog}
         onOpenChange={setShowShareDialog}
       />
-      
+
       {/* NFC Dialog */}
       <NFCDialog
         isOpen={showNFCDialog}
@@ -397,22 +393,23 @@ function ContactsPage() {
         onReceive={handleNFCReceive}
         mode="receive"
       />
-      
+
       {/* Edit Contact Dialog */}
       <EditContactDialog
         contact={editingContact}
         open={!!editingContact}
         onOpenChange={(open) => !open && setEditingContact(null)}
       />
-      
+
       {/* Send Dialog - 當選擇發送給某聯絡人時 */}
-      {sendingToContact && (
-        <SendDialog
-          fromAddress={activeWallet?.address || ""}
-          trigger={<></>}
-          onSuccess={() => setSendingToContact(null)}
-        />
-      )}
+      <SendDialog
+        fromAddress={activeWallet?.address || ""}
+        open={!!sendingToContact}
+        onOpenChange={(open) => !open && setSendingToContact(null)}
+        defaultRecipient={sendingToContact?.address}
+        defaultRecipientName={sendingToContact?.name}
+        onSuccess={() => setSendingToContact(null)}
+      />
     </DashboardLayout>
   );
 }

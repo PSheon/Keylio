@@ -6,14 +6,14 @@ interface SettingsState {
   theme: 'light' | 'dark' | 'system';
   language: 'en' | 'zh-TW';
   currency: 'USD' | 'TWD';
-  
+
   // Security
   autoLockMinutes: number;
   hideBalances: 'always-show' | 'always-hide' | 'hide-on-start';
-  
+
   // Transaction
   largeTransferThreshold: number; // USD amount that triggers warning
-  
+
   // Setters
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
   setLanguage: (lang: 'en' | 'zh-TW') => void;

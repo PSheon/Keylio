@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { PasskeyMetadata } from '@/lib/storage/db';
+import { type PasskeyMetadata } from '@/lib/storage/db';
 
 export function usePasskeyEditor() {
   const [editingPasskeyId, setEditingPasskeyId] = useState<string | null>(null);

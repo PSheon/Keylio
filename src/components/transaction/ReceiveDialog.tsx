@@ -1,22 +1,22 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Copy, 
-  QrCode, 
-  Share2, 
-  Wallet, 
-  Receipt, 
+import {
+  Copy,
+  QrCode,
+  Share2,
+  Wallet,
+  Receipt,
   AlertTriangle,
   CheckCircle2
 } from "lucide-react";
-import { toast } from "sonner";
 import QRCodeLib from "qrcode";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 // ============================================================================
@@ -33,12 +33,12 @@ interface ReceiveDialogProps {
 // ============================================================================
 
 /** Clickable address card with copy functionality */
-function AddressCard({ 
-  address, 
+function AddressCard({
+  address,
   label = "錢包地址",
-  className 
-}: { 
-  address: string; 
+  className
+}: {
+  address: string;
   label?: string;
   className?: string;
 }) {
@@ -75,8 +75,8 @@ function AddressCard({
         </div>
         <div className={cn(
           "p-2 rounded-lg transition-colors",
-          copied 
-            ? "bg-emerald-500/10 text-emerald-500" 
+          copied
+            ? "bg-emerald-500/10 text-emerald-500"
             : "bg-keylio-bg-tertiary text-keylio-text-secondary group-hover:text-keylio-teal"
         )}>
           {copied ? (
@@ -110,16 +110,16 @@ function NetworkWarning({ network = "Plasma" }: { network?: string }) {
 }
 
 /** Share button group - simplified */
-function ShareButtons({ 
-  address, 
-  onCopy 
-}: { 
+function ShareButtons({
+  address,
+  onCopy
+}: {
   address: string;
   onCopy: () => void;
 }) {
   const handleShare = async () => {
     const shareText = `請付款至我的錢包地址:\n${address}`;
-    
+
     if (navigator.share) {
       try {
         await navigator.share({
@@ -156,7 +156,7 @@ function ShareButtons({
 export function ReceiveDialog({ address, trigger }: ReceiveDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState("");
-  
+
   // Payment request fields
   const [requestAmount, setRequestAmount] = useState("");
   const [requestNote, setRequestNote] = useState("");
@@ -197,7 +197,7 @@ export function ReceiveDialog({ address, trigger }: ReceiveDialogProps) {
       }).then(setRequestQrCode);
     }
   }, [paymentUri]);
-  
+
   // Clear QR code when amount is cleared
   const handleAmountChange = useCallback((value: string) => {
     setRequestAmount(value);
@@ -229,14 +229,14 @@ export function ReceiveDialog({ address, trigger }: ReceiveDialogProps) {
 
         <Tabs defaultValue="address" className="w-full">
           <TabsList className="grid w-full grid-cols-2 bg-keylio-bg-tertiary p-1 rounded-lg">
-            <TabsTrigger 
-              value="address" 
+            <TabsTrigger
+              value="address"
               className="gap-2 data-[state=active]:bg-keylio-bg-secondary data-[state=active]:text-keylio-text-primary rounded-md"
             >
               <Wallet className="size-4" />
               收款地址
             </TabsTrigger>
-            <TabsTrigger 
+            <TabsTrigger
               value="request"
               className="gap-2 data-[state=active]:bg-keylio-bg-secondary data-[state=active]:text-keylio-text-primary rounded-md"
             >
@@ -249,20 +249,18 @@ export function ReceiveDialog({ address, trigger }: ReceiveDialogProps) {
           <TabsContent value="address" className="space-y-4 mt-4">
             <div className="flex flex-col items-center space-y-4">
               {/* QR Code */}
-              {qrCodeDataUrl && (
-                <div className="p-4 bg-white rounded-xl shadow-lg">
+              {qrCodeDataUrl ? <div className="p-4 bg-white rounded-xl shadow-lg">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img 
-                    src={qrCodeDataUrl} 
-                    alt="QR Code" 
+                  <img
+                    src={qrCodeDataUrl}
+                    alt="QR Code"
                     className="w-full max-w-[60vw] md:w-48 md:h-48"
                   />
-                </div>
-              )}
+                </div> : null}
 
               {/* Network Warning */}
               <NetworkWarning network="Plasma" />
-              
+
               {/* Address Card (clickable) */}
               <AddressCard address={address} label="您的收款地址" />
 
@@ -305,9 +303,9 @@ export function ReceiveDialog({ address, trigger }: ReceiveDialogProps) {
                 <div className="flex flex-col items-center space-y-4 pt-4">
                   <div className="p-4 bg-white rounded-xl">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img 
-                      src={requestQrCode} 
-                      alt="Payment Request QR Code" 
+                    <img
+                      src={requestQrCode}
+                      alt="Payment Request QR Code"
                       className="w-48 h-48"
                     />
                   </div>
@@ -317,11 +315,9 @@ export function ReceiveDialog({ address, trigger }: ReceiveDialogProps) {
                       <div className="text-2xl font-bold text-keylio-teal">
                         {requestAmount} ETH
                       </div>
-                      {requestNote && (
-                        <div className="text-sm text-keylio-text-secondary">
+                      {requestNote ? <div className="text-sm text-keylio-text-secondary">
                           📝 {requestNote}
-                        </div>
-                      )}
+                        </div> : null}
                     </div>
                   </div>
 

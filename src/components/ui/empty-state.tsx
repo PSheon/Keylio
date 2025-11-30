@@ -2,8 +2,8 @@
 
 import { memo, type ReactNode } from "react";
 import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
 import { fadeInUp } from "@/lib/animations";
+import { cn } from "@/lib/utils";
 
 export interface EmptyStateProps {
   /** 圖示（emoji 或 ReactNode） */
@@ -62,11 +62,9 @@ function EmptyStateComponent({
         className
       )}
     >
-      {icon && (
-        <div className={cn("text-keylio-text-muted", styles.icon)}>
+      {icon ? <div className={cn("text-keylio-text-muted", styles.icon)}>
           {typeof icon === "string" ? <span>{icon}</span> : icon}
-        </div>
-      )}
+        </div> : null}
       <h3
         className={cn(
           "font-medium text-keylio-text-secondary",
@@ -75,17 +73,15 @@ function EmptyStateComponent({
       >
         {title}
       </h3>
-      {description && (
-        <p
+      {description ? <p
           className={cn(
             "text-keylio-text-muted mt-1 max-w-xs",
             styles.description
           )}
         >
           {description}
-        </p>
-      )}
-      {action && <div className="mt-4">{action}</div>}
+        </p> : null}
+      {action ? <div className="mt-4">{action}</div> : null}
     </div>
   );
 

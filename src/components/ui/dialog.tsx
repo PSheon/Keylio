@@ -4,7 +4,6 @@ import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { cva, type VariantProps } from "class-variance-authority"
 import { XIcon } from "lucide-react"
-
 import { cn } from "@/lib/utils"
 
 // ============================================================================
@@ -127,8 +126,7 @@ function DialogContent({
         {...props}
       >
         {children}
-        {showCloseButton && (
-          <DialogPrimitive.Close
+        {showCloseButton ? <DialogPrimitive.Close
             data-slot="dialog-close"
             className={cn(
               "absolute top-3 right-3 p-1.5 rounded-lg transition-all duration-150",
@@ -141,8 +139,7 @@ function DialogContent({
           >
             <XIcon />
             <span className="sr-only">關閉</span>
-          </DialogPrimitive.Close>
-        )}
+          </DialogPrimitive.Close> : null}
       </DialogPrimitive.Content>
     </DialogPortal>
   )
@@ -164,13 +161,11 @@ function DialogHeader({ className, icon, children, ...props }: DialogHeaderProps
       className={cn("flex flex-col gap-2", className)}
       {...props}
     >
-      {icon && (
-        <div className="flex justify-center mb-2">
+      {icon ? <div className="flex justify-center mb-2">
           <div className="p-3 rounded-full bg-keylio-bg-tertiary text-keylio-teal">
             {icon}
           </div>
-        </div>
-      )}
+        </div> : null}
       {children}
     </div>
   )
@@ -187,8 +182,8 @@ function DialogFooter({ className, stack = false, ...props }: DialogFooterProps)
       data-slot="dialog-footer"
       className={cn(
         "flex gap-3 pt-2",
-        stack 
-          ? "flex-col" 
+        stack
+          ? "flex-col"
           : "flex-col-reverse sm:flex-row sm:justify-end",
         className
       )}

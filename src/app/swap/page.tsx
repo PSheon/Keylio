@@ -4,6 +4,7 @@ import { memo } from "react";
 import { motion } from "framer-motion";
 import { ArrowRightLeft } from "lucide-react";
 import { SwapDialog } from "@/components/transaction/SwapDialog";
+import { DashboardLayout } from "@/components/wallet/DashboardLayout";
 import { fadeInUp, staggerContainer } from "@/lib/animations";
 
 /**
@@ -12,7 +13,8 @@ import { fadeInUp, staggerContainer } from "@/lib/animations";
  */
 function SwapPage() {
   return (
-    <motion.div 
+    <DashboardLayout>
+    <motion.div
       className="space-y-6"
       variants={staggerContainer}
       initial="initial"
@@ -25,9 +27,9 @@ function SwapPage() {
           在穩定幣之間快速兌換，零手續費
         </p>
       </motion.div>
-      
+
       {/* Swap Card */}
-      <motion.div 
+      <motion.div
         variants={fadeInUp}
         className="bg-keylio-bg-secondary rounded-2xl border border-keylio-border-primary p-6"
       >
@@ -41,7 +43,7 @@ function SwapPage() {
           <p className="text-sm text-keylio-text-muted text-center mb-6 max-w-xs">
             支援 USDT 與 USDC 之間的即時兌換，享受 Plasma 網路零手續費優勢
           </p>
-          
+
           <SwapDialog
             trigger={
               <button className="px-8 py-3 bg-keylio-teal hover:bg-keylio-teal/90 text-white rounded-full font-medium transition-colors">
@@ -51,7 +53,7 @@ function SwapPage() {
           />
         </div>
       </motion.div>
-      
+
       {/* Info Cards */}
       <motion.div variants={fadeInUp} className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-keylio-bg-secondary rounded-2xl border border-keylio-border-primary p-4">
@@ -60,7 +62,7 @@ function SwapPage() {
             Plasma 網路優化，穩定幣兌換無需支付任何手續費
           </p>
         </div>
-        
+
         <div className="bg-keylio-bg-secondary rounded-2xl border border-keylio-border-primary p-4">
           <h3 className="font-medium text-keylio-text-primary mb-2">⚡ 即時確認</h3>
           <p className="text-sm text-keylio-text-muted">
@@ -69,6 +71,7 @@ function SwapPage() {
         </div>
       </motion.div>
     </motion.div>
+    </DashboardLayout>
   );
 }
 

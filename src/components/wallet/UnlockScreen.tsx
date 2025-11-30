@@ -1,21 +1,20 @@
 "use client";
 
 import { useState } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Lock, ArrowRight, Fingerprint, Unlock } from "lucide-react";
 import { toast } from "sonner";
-import { useWalletStore } from "@/stores/useWalletStore";
-import db from "@/lib/storage/db";
-import { decryptData, decryptStoredPassword } from "@/lib/crypto";
-import { authenticatePasskey } from "@/lib/passkey";
 import { useSessionContext } from "@/components/providers/SessionProvider";
-import { useLiveQuery } from "dexie-react-hooks";
-
-import type { PasskeyMetadata } from "@/lib/storage/db";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { decryptData, decryptStoredPassword } from "@/lib/crypto";
 import type { EncryptedData } from "@/lib/crypto";
+import { authenticatePasskey } from "@/lib/passkey";
+import db from "@/lib/storage/db";
+import type { PasskeyMetadata } from "@/lib/storage/db";
+import { useWalletStore } from "@/stores/useWalletStore";
 
 interface UnlockScreenProps {
   onUnlock: () => void;
@@ -27,7 +26,7 @@ export function UnlockScreen({ onUnlock }: UnlockScreenProps) {
   const [isShake, setIsShake] = useState(false);
   const createSession = useWalletStore((state) => state.createSession);
   const setUnlocked = useWalletStore((state) => state.setUnlocked);
-  
+
   // Use session context for state management
   const { storeEncryptedPassword } = useSessionContext();
 
@@ -54,7 +53,7 @@ export function UnlockScreen({ onUnlock }: UnlockScreenProps) {
 
       // If decryption succeeds, the password is correct
       await decryptData(setting.value as EncryptedData, password);
-      
+
       await createSession(password);
       // Store encrypted password in session for sensitive operations (e.g., backup mnemonic)
       await storeEncryptedPassword(password);
@@ -80,7 +79,7 @@ export function UnlockScreen({ onUnlock }: UnlockScreenProps) {
             return authenticatePasskey();
           })
         : await authenticatePasskey();
-      
+
       // Update last used timestamp (fire and forget)
       if (result.credentialId) {
         db.settings.get({ key: 'passkeys_metadata' }).then(setting => {
@@ -88,15 +87,15 @@ export function UnlockScreen({ onUnlock }: UnlockScreenProps) {
           db.settings.put({
             id: setting?.id,
             key: 'passkeys_metadata',
-            value: passkeys.map(pk => 
-              pk.credentialId === result.credentialId 
-                ? { ...pk, lastUsed: Date.now() } 
+            value: passkeys.map(pk =>
+              pk.credentialId === result.credentialId
+                ? { ...pk, lastUsed: Date.now() }
                 : pk
             )
           });
         });
       }
-      
+
       // Get encrypted password from IndexedDB and create full session
       const encryptedPwdSetting = await db.settings.get({ key: 'encrypted_password' });
       if (encryptedPwdSetting) {
@@ -106,7 +105,7 @@ export function UnlockScreen({ onUnlock }: UnlockScreenProps) {
         await createSession(pwd);
         await storeEncryptedPassword(pwd);
       }
-      
+
       setUnlocked(true);
       toast.success("驗證成功");
       onUnlock();
@@ -134,20 +133,20 @@ export function UnlockScreen({ onUnlock }: UnlockScreenProps) {
       >
         <Card className="bg-keylio-bg-secondary/60 backdrop-blur-xl border-keylio-border-primary shadow-2xl overflow-hidden">
           <CardHeader className="text-center pb-2">
-            <motion.div 
+            <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.1 }}
               className="mx-auto w-20 h-20 bg-linear-to-br from-teal-500/20 to-purple-500/20 rounded-full flex items-center justify-center mb-6 ring-1 ring-white/10 shadow-[0_0_30px_rgba(20,184,166,0.2)] relative group"
             >
-              <div className="absolute inset-0 rounded-full bg-teal-500/10 blur-md group-hover:blur-lg transition-all duration-500"></div>
+              <div className="absolute inset-0 rounded-full bg-teal-500/10 blur-md group-hover:blur-lg transition-all duration-500" />
               {isProcessing ? (
                 <Unlock className="w-8 h-8 text-teal-400 animate-pulse" />
               ) : (
                 <Lock className="w-8 h-8 text-teal-400 group-hover:text-teal-300 transition-colors" />
               )}
             </motion.div>
-            
+
             <CardTitle className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-keylio-text-primary to-keylio-text-secondary mb-2">
               歡迎回來
             </CardTitle>
@@ -155,11 +154,11 @@ export function UnlockScreen({ onUnlock }: UnlockScreenProps) {
               您的數位資產已安全鎖定
             </CardDescription>
           </CardHeader>
-          
+
           <CardContent className="space-y-6 pt-6">
             {/* Passkey Button (Primary Option) */}
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={handlePasskeyUnlock}
               disabled={isProcessing}
               className="w-full border-keylio-border-primary hover:bg-keylio-bg-tertiary hover:text-keylio-text-primary h-14 rounded-xl transition-all group relative overflow-hidden"
@@ -169,8 +168,8 @@ export function UnlockScreen({ onUnlock }: UnlockScreenProps) {
                 <Fingerprint className="w-5 h-5 text-teal-500" />
               </div>
               <span className="text-lg font-medium relative z-10">
-                {defaultPasskey 
-                  ? `使用 ${defaultPasskey.name} 快速登入` 
+                {defaultPasskey
+                  ? `使用 ${defaultPasskey.name} 快速登入`
                   : "使用 Passkey 快速登入"
                 }
               </span>
@@ -186,7 +185,7 @@ export function UnlockScreen({ onUnlock }: UnlockScreenProps) {
             </div>
 
             {/* Password Input (Secondary Option) */}
-            <motion.div 
+            <motion.div
               className="space-y-4"
               animate={isShake ? { x: [-10, 10, -10, 10, 0] } : {}}
               transition={{ duration: 0.4 }}
@@ -204,8 +203,8 @@ export function UnlockScreen({ onUnlock }: UnlockScreenProps) {
                 />
               </div>
 
-              <Button 
-                onClick={handleUnlock} 
+              <Button
+                onClick={handleUnlock}
                 disabled={isProcessing}
                 variant="ghost"
                 className="w-full text-keylio-text-secondary hover:text-keylio-text-primary hover:bg-keylio-bg-tertiary h-10 rounded-xl transition-all"
@@ -224,7 +223,7 @@ export function UnlockScreen({ onUnlock }: UnlockScreenProps) {
             </motion.div>
           </CardContent>
         </Card>
-        
+
         <p className="text-center text-xs text-keylio-text-secondary mt-6 opacity-60">
           受端對端加密保護
         </p>

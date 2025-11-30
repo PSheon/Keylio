@@ -2,18 +2,6 @@
 
 import { memo, useState, useCallback } from "react";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogBody,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
   Shield,
   AlertTriangle,
   Eye,
@@ -22,10 +10,22 @@ import {
   Check,
   Lock,
 } from "lucide-react";
-import db from "@/lib/storage/db";
-import { decryptData, type EncryptedData } from "@/lib/crypto";
-import { AuthVerification } from "@/components/auth/AuthVerification";
 import { toast } from "sonner";
+import { AuthVerification } from "@/components/auth/AuthVerification";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogBody,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { decryptData, type EncryptedData } from "@/lib/crypto";
+import db from "@/lib/storage/db";
 import { cn } from "@/lib/utils";
 
 interface BackupMnemonicDialogProps {
@@ -38,7 +38,7 @@ type Step = "auth" | "warning" | "reveal" | "verify";
 /**
  * 備份助記詞 Dialog
  * 包含驗證、警告、顯示、驗證確認四個步驟
- * 
+ *
  * 支援兩種驗證方式：
  * 1. Passkey 驗證（如果 session 中有儲存密碼）
  * 2. 密碼驗證（備用選項）
@@ -112,7 +112,7 @@ function BackupMnemonicDialogComponent({
 
   const handleVerify = useCallback(() => {
     setIsVerifying(true);
-    
+
     const isCorrect = verifyWords.every(
       (vw, idx) => userInputs[idx].toLowerCase().trim() === vw.word.toLowerCase()
     );
@@ -124,7 +124,7 @@ function BackupMnemonicDialogComponent({
       toast.error("驗證失敗，請重新輸入");
       setUserInputs(["", "", ""]);
     }
-    
+
     setIsVerifying(false);
   }, [verifyWords, userInputs, handleOpenChange]);
 
@@ -157,7 +157,7 @@ function BackupMnemonicDialogComponent({
               將助記詞分享給任何人，包括 Keylio 團隊成員
             </p>
           </div>
-          
+
           <div className="flex gap-3 p-3 bg-amber-500/5 rounded-lg border border-amber-500/20">
             <Shield className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
             <p>

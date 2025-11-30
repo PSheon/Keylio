@@ -2,6 +2,7 @@
 
 import { memo } from "react";
 import { DollarSign } from "lucide-react";
+import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -11,7 +12,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useSettingsStore } from "@/stores/useSettingsStore";
-import { toast } from "sonner";
 
 /** 貨幣選項 */
 const CURRENCY_OPTIONS = [
@@ -53,12 +53,10 @@ function CurrencySettingsComponent() {
       <Select value={currency} onValueChange={handleChange}>
         <SelectTrigger className="w-[140px] bg-keylio-bg-tertiary border-keylio-border-primary text-keylio-text-primary">
           <SelectValue placeholder="選擇貨幣">
-            {currentOption && (
-              <span className="flex items-center gap-1.5">
+            {currentOption ? <span className="flex items-center gap-1.5">
                 <span className="text-keylio-text-muted">{currentOption.symbol}</span>
                 {currentOption.value}
-              </span>
-            )}
+              </span> : null}
           </SelectValue>
         </SelectTrigger>
         <SelectContent className="bg-keylio-bg-secondary border-keylio-border-primary">

@@ -1,28 +1,25 @@
 "use client";
 
 import { useState, useMemo, memo, useCallback } from "react";
-import { motion } from "framer-motion";
-import { useShallow } from "zustand/react/shallow";
 import { useLiveQuery } from "dexie-react-hooks";
+import { motion } from "framer-motion";
 import { toast } from "sonner";
-
-import { useWalletStore } from "@/stores/useWalletStore";
-import { getAllTokens, formatTokenAmount, getTokenValueUSD } from "@/lib/tokens";
+import { useShallow } from "zustand/react/shallow";
 import { useMultiTokenBalance } from "@/hooks/useTokenBalance";
-import db from "@/lib/storage/db";
 import { staggerContainer } from "@/lib/animations";
-
-// Extracted components
-import { PortfolioHeader } from "./PortfolioHeader";
+import db from "@/lib/storage/db";
+import { getAllTokens, formatTokenAmount, getTokenValueUSD } from "@/lib/tokens";
+import { useWalletStore } from "@/stores/useWalletStore";
+import { AssetChart } from "./AssetChart";
 import { PortfolioBalance } from "./PortfolioBalance";
+import { PortfolioHeader } from "./PortfolioHeader";
 import { QuickActionGrid } from "./QuickActionGrid";
 import { RecentActivityList } from "./RecentActivityList";
 import { StablecoinAssetCard } from "./StablecoinAssetCard";
-import { AssetChart } from "./AssetChart";
 
 /**
  * Portfolio Home Page
- * 
+ *
  * 頁面結構（優化後）：
  * 1. Header - 錢包切換
  * 2. 全局總資產 KPI - 點擊展開完整資產 Dialog
@@ -136,7 +133,7 @@ function PortfolioHomeComponent() {
 
       {/* ===== 操作區塊 ===== */}
       {/* 與 Overview 區塊之間有視覺分隔（space-y-6 已提供） */}
-      
+
       {/* 4. 快速操作 */}
       <QuickActionGrid walletAddress={walletAddress} hasBalance={hasBalance} />
 

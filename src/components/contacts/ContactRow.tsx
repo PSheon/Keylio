@@ -12,6 +12,7 @@ import {
   Copy,
   MoreHorizontal,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -21,9 +22,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { staggerItem } from "@/lib/animations";
-import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 import type { Contact } from "@/lib/storage/db";
+import { cn } from "@/lib/utils";
 
 /** ContactRow 變體 */
 export type ContactRowVariant = "default" | "compact" | "picker";
@@ -97,7 +97,7 @@ function ContactRowComponent({
         <div className="flex-1 min-w-0">
           <div className="font-medium text-keylio-text-primary flex items-center gap-1.5">
             {contact.name}
-            {isFavorite && <Star className="w-3 h-3 text-amber-400 fill-amber-400" />}
+            {isFavorite ? <Star className="w-3 h-3 text-amber-400 fill-amber-400" /> : null}
           </div>
           <div className="text-xs text-keylio-text-muted font-mono truncate">
             {shortAddress}
@@ -105,13 +105,11 @@ function ContactRowComponent({
         </div>
 
         {/* Selected indicator */}
-        {isSelected && (
-          <div className="w-5 h-5 rounded-full bg-keylio-teal flex items-center justify-center">
+        {isSelected ? <div className="w-5 h-5 rounded-full bg-keylio-teal flex items-center justify-center">
             <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
             </svg>
-          </div>
-        )}
+          </div> : null}
       </motion.button>
     );
   }
@@ -139,16 +137,14 @@ function ContactRowComponent({
         </div>
 
         {/* Actions */}
-        {onSend && (
-          <Button
+        {onSend ? <Button
             variant="ghost"
             size="sm"
             onClick={() => onSend(contact)}
             className="h-7 w-7 p-0 text-keylio-teal hover:text-keylio-teal hover:bg-keylio-teal/10"
           >
             <Send className="w-3.5 h-3.5" />
-          </Button>
-        )}
+          </Button> : null}
       </motion.div>
     );
   }
@@ -163,22 +159,18 @@ function ContactRowComponent({
         {/* Avatar */}
         <div className="w-12 h-12 rounded-full bg-keylio-bg-tertiary flex items-center justify-center text-xl relative">
           {contact.emoji || <User className="w-6 h-6 text-keylio-text-muted" />}
-          {isFavorite && (
-            <div className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-amber-500/20 flex items-center justify-center">
+          {isFavorite ? <div className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-amber-500/20 flex items-center justify-center">
               <Star className="w-2.5 h-2.5 text-amber-400 fill-amber-400" />
-            </div>
-          )}
+            </div> : null}
         </div>
 
         {/* Info */}
         <div>
           <div className="font-medium text-keylio-text-primary flex items-center gap-2">
             {contact.name}
-            {contact.label && (
-              <span className="text-xs px-1.5 py-0.5 rounded bg-keylio-bg-tertiary text-keylio-text-muted">
+            {contact.label ? <span className="text-xs px-1.5 py-0.5 rounded bg-keylio-bg-tertiary text-keylio-text-muted">
                 {contact.label}
-              </span>
-            )}
+              </span> : null}
           </div>
           <div className="flex items-center gap-2 mt-0.5">
             <span className="text-xs text-keylio-text-muted font-mono">
@@ -191,28 +183,24 @@ function ContactRowComponent({
               <Copy className="w-3 h-3 text-keylio-text-muted hover:text-keylio-teal" />
             </button>
           </div>
-          {contact.lastUsed && (
-            <div className="text-xs text-keylio-text-muted flex items-center gap-1 mt-0.5">
+          {contact.lastUsed ? <div className="text-xs text-keylio-text-muted flex items-center gap-1 mt-0.5">
               <Clock className="w-3 h-3" />
               {getTimeAgo(contact.lastUsed)}
-            </div>
-          )}
+            </div> : null}
         </div>
       </div>
 
       {/* Actions */}
       <div className="flex items-center gap-1">
         {/* Send Button */}
-        {onSend && (
-          <Button
+        {onSend ? <Button
             variant="ghost"
             size="sm"
             onClick={() => onSend(contact)}
             className="h-9 w-9 p-0 text-keylio-teal hover:text-keylio-teal hover:bg-keylio-teal/10"
           >
             <Send className="w-4 h-4" />
-          </Button>
-        )}
+          </Button> : null}
 
         {/* More Actions Menu */}
         <DropdownMenu>
@@ -229,15 +217,13 @@ function ContactRowComponent({
             align="end"
             className="bg-keylio-bg-secondary border-keylio-border-primary"
           >
-            {onToggleFavorite && (
-              <DropdownMenuItem
+            {onToggleFavorite ? <DropdownMenuItem
                 onClick={() => onToggleFavorite(contact)}
                 className="text-keylio-text-primary hover:bg-keylio-bg-tertiary cursor-pointer"
               >
                 <Star className={cn("w-4 h-4 mr-2", isFavorite && "text-amber-400 fill-amber-400")} />
                 {isFavorite ? "取消收藏" : "加入收藏"}
-              </DropdownMenuItem>
-            )}
+              </DropdownMenuItem> : null}
             <DropdownMenuItem
               onClick={handleCopyAddress}
               className="text-keylio-text-primary hover:bg-keylio-bg-tertiary cursor-pointer"
@@ -245,17 +231,14 @@ function ContactRowComponent({
               <Copy className="w-4 h-4 mr-2" />
               複製地址
             </DropdownMenuItem>
-            {onEdit && (
-              <DropdownMenuItem
+            {onEdit ? <DropdownMenuItem
                 onClick={() => onEdit(contact)}
                 className="text-keylio-text-primary hover:bg-keylio-bg-tertiary cursor-pointer"
               >
                 <Edit className="w-4 h-4 mr-2" />
                 編輯
-              </DropdownMenuItem>
-            )}
-            {onDelete && (
-              <>
+              </DropdownMenuItem> : null}
+            {onDelete ? <>
                 <DropdownMenuSeparator className="bg-keylio-border-primary" />
                 <DropdownMenuItem
                   onClick={() => onDelete(contact)}
@@ -264,8 +247,7 @@ function ContactRowComponent({
                   <Trash2 className="w-4 h-4 mr-2" />
                   刪除
                 </DropdownMenuItem>
-              </>
-            )}
+              </> : null}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

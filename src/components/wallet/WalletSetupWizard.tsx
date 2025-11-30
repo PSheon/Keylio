@@ -2,20 +2,19 @@
 
 import { useState, memo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Eye, EyeOff, ShieldCheck, Fingerprint, Plus, Trash2, Edit2, Check, X, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { useWalletStore } from "@/stores/useWalletStore";
-import { deriveWallet, deriveXpub, encryptData, encryptPasswordForStorage } from "@/lib/crypto";
 import { useSessionContext } from "@/components/providers/SessionProvider";
-import { usePasskeyManager } from "@/hooks/usePasskeyManager";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import { usePasskeyEditor } from "@/hooks/usePasskeyEditor";
+import { usePasskeyManager } from "@/hooks/usePasskeyManager";
+import { deriveWallet, deriveXpub, encryptData, encryptPasswordForStorage } from "@/lib/crypto";
 import db from "@/lib/storage/db";
-
 import type { PasskeyMetadata } from "@/lib/storage/db";
+import { useWalletStore } from "@/stores/useWalletStore";
 interface WalletSetupWizardProps {
   onComplete: () => void;
 }
@@ -30,9 +29,9 @@ export const WalletSetupWizard = memo(function WalletSetupWizard({ onComplete }:
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  
+
   const [passkeys, setPasskeys] = useState<PasskeyMetadata[]>([]);
-  
+
   const passkeyManager = usePasskeyManager();
   const passkeyEditor = usePasskeyEditor();
   const { storeEncryptedPassword } = useSessionContext();
@@ -127,15 +126,15 @@ export const WalletSetupWizard = memo(function WalletSetupWizard({ onComplete }:
         const existingXpub = await db.settings.get({ key: 'xpub' });
         const existingEncryptedPwd = await db.settings.get({ key: 'encrypted_password' });
 
-        await db.settings.put({ 
+        await db.settings.put({
           id: existingMnemonic?.id,
-          key: 'encrypted_mnemonic', 
-          value: encryptedMnemonic 
+          key: 'encrypted_mnemonic',
+          value: encryptedMnemonic
         });
-        await db.settings.put({ 
+        await db.settings.put({
           id: existingPasskeys?.id,
-          key: 'passkeys_metadata', 
-          value: passkeys 
+          key: 'passkeys_metadata',
+          value: passkeys
         });
         // Store xpub for deriving sub-wallet addresses (safe to store, cannot sign transactions)
         await db.settings.put({
@@ -194,7 +193,7 @@ export const WalletSetupWizard = memo(function WalletSetupWizard({ onComplete }:
           </div>
           <Progress value={(step / 2) * 100} className="h-1 bg-white/5 *:bg-teal-500" />
         </CardHeader>
-        
+
         <CardContent className="pt-8 min-h-[420px] flex flex-col">
           <AnimatePresence mode="wait">
             {/* Step 1: Password Setup (per Spec) */}
@@ -301,7 +300,7 @@ const PasswordStep = memo(function PasswordStep({
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
-          
+
           {/* Visual Strength Meter */}
           <div className="space-y-1.5">
             <div className="flex justify-between text-xs px-1">
@@ -311,7 +310,7 @@ const PasswordStep = memo(function PasswordStep({
               </span>
             </div>
             <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-              <motion.div 
+              <motion.div
                 className={`h-full ${getStrengthColor(strengthScore)}`}
                 initial={{ width: 0 }}
                 animate={{ width: `${strengthScore}%` }}
@@ -334,14 +333,12 @@ const PasswordStep = memo(function PasswordStep({
             data-form-type="other"
             className={`bg-white/5 border-white/10 h-12 rounded-xl ${confirmPassword && password !== confirmPassword ? 'border-red-500/50' : ''}`}
           />
-          {confirmPassword && password !== confirmPassword && (
-            <p className="text-xs text-red-400 text-right px-1">密碼不一致</p>
-          )}
+          {confirmPassword && password !== confirmPassword ? <p className="text-xs text-red-400 text-right px-1">密碼不一致</p> : null}
         </div>
       </div>
 
-      <Button 
-        onClick={onNext} 
+      <Button
+        onClick={onNext}
         disabled={!isPasswordValid}
         className="w-full bg-white text-black hover:bg-gray-200 h-12 text-base font-medium mt-8 rounded-xl transition-all disabled:opacity-50"
       >

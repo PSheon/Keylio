@@ -1,5 +1,4 @@
 import Dexie from "dexie";
-
 import type { EntityTable } from "dexie";
 
 // Settings stored as key-value pairs
@@ -65,24 +64,24 @@ export interface UserPreferences {
   language: 'en' | 'zh-TW' | 'zh-CN'; // UI language
   currency: 'USD' | 'TWD' | 'CNY' | 'EUR' | 'JPY'; // Fiat currency for display
   theme: 'light' | 'dark' | 'auto'; // Theme preference
-  
+
   // Security
   autoLockMinutes: number; // Auto-lock timeout (0 = disabled)
   requirePasskeyForSend: boolean; // Require Passkey for every transaction
   hiddenBalances: boolean; // Hide balance amounts by default
-  
+
   // Transactions
   defaultGasPreset: 'slow' | 'standard' | 'fast' | 'custom'; // Gas fee preference
   showTestnets: boolean; // Show testnet networks
   confirmBeforeSend: boolean; // Show confirmation dialog before sending
-  
+
   // Privacy
   enableAnalytics: boolean; // Anonymous usage analytics
-  
+
   // Notifications
   notifyOnReceive: boolean; // Notify when receiving tokens
   notifyOnConfirmed: boolean; // Notify when transaction confirmed
-  
+
   updatedAt: number;
 }
 

@@ -1,12 +1,13 @@
 /**
  * Keylio Wallet - Secure Session Management
- * 
+ *
  * Uses Web Crypto API to derive a CryptoKey from the user's password.
  * The CryptoKey is stored in memory and cannot be read by JavaScript.
  * This is more secure than storing the plaintext password.
  */
 
-import { KeylioError, ErrorCode } from './errors';
+import { useCallback,useEffect, useState } from 'react';
+import { ErrorCode,KeylioError } from './errors';
 
 // ========================================
 // Types
@@ -48,7 +49,7 @@ class SessionManager {
    */
   async createSession(password: string, salt?: Uint8Array): Promise<void> {
     const sessionSalt = salt || crypto.getRandomValues(new Uint8Array(16));
-    
+
     try {
       const keyMaterial = await crypto.subtle.importKey(
         'raw',
@@ -93,16 +94,16 @@ class SessionManager {
    */
   isActive(): boolean {
     if (!this.session) return false;
-    
+
     // Check if session has expired
     const now = Date.now();
     const timeoutMs = this.config.autoLockMinutes * 60 * 1000;
-    
+
     if (timeoutMs > 0 && now - this.session.lastActivityAt > timeoutMs) {
       this.destroy();
       return false;
     }
-    
+
     return true;
   }
 
@@ -113,7 +114,7 @@ class SessionManager {
     if (!this.isActive()) {
       throw new KeylioError(ErrorCode.AUTH_SESSION_EXPIRED);
     }
-    
+
     // Update last activity
     this.session!.lastActivityAt = Date.now();
     return this.session!.key;
@@ -185,13 +186,13 @@ class SessionManager {
   async encrypt(data: string): Promise<{ ciphertext: ArrayBuffer; iv: Uint8Array }> {
     const key = this.getKey();
     const iv = crypto.getRandomValues(new Uint8Array(12));
-    
+
     const ciphertext = await crypto.subtle.encrypt(
       { name: 'AES-GCM', iv: iv as BufferSource },
       key,
       new TextEncoder().encode(data)
     );
-    
+
     return { ciphertext, iv };
   }
 
@@ -200,14 +201,14 @@ class SessionManager {
    */
   async decrypt(ciphertext: ArrayBuffer, iv: Uint8Array): Promise<string> {
     const key = this.getKey();
-    
+
     try {
       const decrypted = await crypto.subtle.decrypt(
         { name: 'AES-GCM', iv: iv as BufferSource },
         key,
         ciphertext
       );
-      
+
       return new TextDecoder().decode(decrypted);
     } catch {
       throw new KeylioError(ErrorCode.WALLET_DECRYPTION_FAILED);
@@ -219,7 +220,7 @@ class SessionManager {
    */
   configure(config: Partial<SessionConfig>): void {
     this.config = { ...this.config, ...config };
-    
+
     // Restart activity monitoring with new timeout
     if (this.session) {
       this.startActivityMonitoring();
@@ -243,7 +244,7 @@ class SessionManager {
   destroy(notify: boolean = true): void {
     // Prevent infinite recursion - only proceed if session exists
     if (!this.session) return;
-    
+
     // Clear encrypted password from memory
     if (this.session.encryptedPassword) {
       // Overwrite with zeros before clearing (security best practice)
@@ -252,10 +253,10 @@ class SessionManager {
       this.session.encryptedPassword.iv.fill(0);
       this.session.encryptedPassword = undefined;
     }
-    
+
     this.session = null;
     this.stopActivityMonitoring();
-    
+
     // Notify listeners only if requested and callback exists
     if (notify && this.config.onSessionExpired) {
       this.config.onSessionExpired();
@@ -269,7 +270,7 @@ class SessionManager {
     if (!this.session || this.config.autoLockMinutes === 0) {
       return Infinity;
     }
-    
+
     const timeoutMs = this.config.autoLockMinutes * 60 * 1000;
     const elapsed = Date.now() - this.session.lastActivityAt;
     return Math.max(0, timeoutMs - elapsed);
@@ -281,7 +282,7 @@ class SessionManager {
 
   private startActivityMonitoring(): void {
     this.stopActivityMonitoring();
-    
+
     // Set up visibility change handler
     if (typeof document !== 'undefined') {
       this.visibilityHandler = () => {
@@ -294,7 +295,7 @@ class SessionManager {
       };
       document.addEventListener('visibilitychange', this.visibilityHandler);
     }
-    
+
     this.resetActivityTimer();
   }
 
@@ -303,7 +304,7 @@ class SessionManager {
       clearTimeout(this.activityTimer);
       this.activityTimer = null;
     }
-    
+
     if (this.visibilityHandler && typeof document !== 'undefined') {
       document.removeEventListener('visibilitychange', this.visibilityHandler);
       this.visibilityHandler = null;
@@ -314,7 +315,7 @@ class SessionManager {
     if (this.activityTimer) {
       clearTimeout(this.activityTimer);
     }
-    
+
     if (this.config.autoLockMinutes > 0) {
       const timeoutMs = this.config.autoLockMinutes * 60 * 1000;
       this.activityTimer = setTimeout(() => {
@@ -332,8 +333,6 @@ export const sessionManager = new SessionManager();
 // ========================================
 // React Hook
 // ========================================
-
-import { useEffect, useState, useCallback } from 'react';
 
 export function useSession() {
   const [isActive, setIsActive] = useState(sessionManager.isActive());

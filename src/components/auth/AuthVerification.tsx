@@ -1,16 +1,16 @@
 "use client";
 
 import { memo, useState, useCallback } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
+import { Fingerprint, Lock } from "lucide-react";
+import { toast } from "sonner";
+import { useSessionContext } from "@/components/providers/SessionProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Fingerprint, Lock } from "lucide-react";
-import db, { type PasskeyMetadata } from "@/lib/storage/db";
 import { decryptData, type EncryptedData } from "@/lib/crypto";
 import { authenticatePasskey } from "@/lib/passkey";
-import { useSessionContext } from "@/components/providers/SessionProvider";
-import { useLiveQuery } from "dexie-react-hooks";
-import { toast } from "sonner";
+import db, { type PasskeyMetadata } from "@/lib/storage/db";
 
 export interface AuthVerificationProps {
   /**
@@ -108,7 +108,7 @@ function AuthVerificationComponent({
         // Just verify identity, no password needed
         onSuccess("");
       }
-      
+
       toast.success("驗證成功");
     } catch (error) {
       console.error("Passkey auth failed:", error);
@@ -187,11 +187,9 @@ function AuthVerificationComponent({
               </>
             )}
           </Button>
-          {requirePassword && !sessionHasPassword && (
-            <p className="text-xs text-amber-400 text-center">
+          {requirePassword && !sessionHasPassword ? <p className="text-xs text-amber-400 text-center">
               Session 已過期，請先使用密碼登入
-            </p>
-          )}
+            </p> : null}
           <div className="text-center">
             <button
               onClick={() => setShowPasswordInput(true)}

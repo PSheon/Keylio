@@ -2,6 +2,7 @@
 
 import { useState, useMemo, memo } from "react";
 import { motion } from "framer-motion";
+import { TrendingUp, TrendingDown } from "lucide-react";
 import {
   AreaChart,
   Area,
@@ -10,9 +11,8 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { TrendingUp, TrendingDown } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { fadeInUp } from "@/lib/animations";
+import { cn } from "@/lib/utils";
 
 type TimeRange = "7d" | "30d" | "90d";
 
@@ -31,35 +31,35 @@ interface ChartDataPoint {
 const generateMockData = (days: number, baseValue: number): ChartDataPoint[] => {
   const data: ChartDataPoint[] = [];
   const now = new Date();
-  
+
   // Generate data with realistic volatility for stablecoins
   let value = baseValue * 0.95; // Start slightly lower
-  
+
   for (let i = days; i >= 0; i--) {
     const date = new Date(now);
     date.setDate(date.getDate() - i);
-    
+
     // Small random variation (±2% for stablecoins)
     const change = (Math.random() - 0.45) * 0.04 * value;
     value = Math.max(value + change, 0);
-    
+
     // Trend towards current value
     if (i < days / 3) {
       value = value + (baseValue - value) * 0.1;
     }
-    
+
     data.push({
       date: date.toISOString(),
       value: Math.round(value * 100) / 100,
       displayDate: `${date.getMonth() + 1}/${date.getDate()}`,
     });
   }
-  
+
   // Ensure last value matches current total
   if (data.length > 0) {
     data[data.length - 1].value = baseValue;
   }
-  
+
   return data;
 };
 
@@ -95,48 +95,48 @@ const CustomTooltip = ({ active, payload }: CustomTooltipProps) => {
  */
 export function AssetChart({ totalValue, className }: AssetChartProps) {
   const [timeRange, setTimeRange] = useState<TimeRange>("30d");
-  
+
   const timeRangeOptions: { value: TimeRange; label: string; days: number }[] = useMemo(() => [
     { value: "7d", label: "7天", days: 7 },
     { value: "30d", label: "30天", days: 30 },
     { value: "90d", label: "3月", days: 90 },
   ], []);
-  
+
   // Generate chart data based on time range
   const chartData = useMemo(() => {
     const days = timeRangeOptions.find(o => o.value === timeRange)?.days || 30;
     return generateMockData(days, totalValue);
   }, [timeRange, totalValue, timeRangeOptions]);
-  
+
   // Calculate change percentage
   const { changePercent, isPositive, hasData } = useMemo(() => {
     // No data or zero value - show empty state
     if (chartData.length < 2 || totalValue === 0) {
       return { changePercent: 0, isPositive: true, hasData: false };
     }
-    
+
     const firstValue = chartData[0].value;
     const lastValue = chartData[chartData.length - 1].value;
-    
+
     // Prevent division by zero
     if (firstValue === 0) {
       return { changePercent: 0, isPositive: true, hasData: true };
     }
-    
+
     const change = ((lastValue - firstValue) / firstValue) * 100;
-    
+
     return {
       changePercent: Math.abs(change),
       isPositive: change >= 0,
       hasData: true,
     };
   }, [chartData, totalValue]);
-  
+
   // Chart gradient colors
   const gradientColor = isPositive ? "#14b8a6" : "#ef4444"; // teal or red
-  
+
   return (
-    <motion.div 
+    <motion.div
       variants={fadeInUp}
       className={cn(
         "bg-keylio-bg-secondary rounded-2xl border border-keylio-border-primary p-3 sm:p-4 lg:p-6",
@@ -171,7 +171,7 @@ export function AssetChart({ totalValue, className }: AssetChartProps) {
             </div>
           )}
         </div>
-        
+
         {/* Time Range Selector - Spec: [7天][30天][3月] - P1: 響應式按鈕 */}
         <div className="flex gap-0.5 sm:gap-1 bg-keylio-bg-tertiary rounded-lg p-0.5 sm:p-1">
           {timeRangeOptions.map((option) => (
@@ -190,7 +190,7 @@ export function AssetChart({ totalValue, className }: AssetChartProps) {
           ))}
         </div>
       </div>
-      
+
       {/* Chart Area - Spec: 桌面版寬度 400px，支持 hover 工具提示 */}
       {/* P1: 響應式高度 - 手機 140px, 桌面 200px */}
       <div className="h-[140px] sm:h-40 lg:h-[200px] w-full">
@@ -206,7 +206,7 @@ export function AssetChart({ totalValue, className }: AssetChartProps) {
                   <stop offset="95%" stopColor={gradientColor} stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <XAxis 
+              <XAxis
                 dataKey="displayDate"
                 axisLine={false}
                 tickLine={false}
@@ -214,11 +214,11 @@ export function AssetChart({ totalValue, className }: AssetChartProps) {
                 interval="preserveStartEnd"
                 minTickGap={30}
               />
-              <YAxis 
+              <YAxis
                 hide
                 domain={['dataMin - 10', 'dataMax + 10']}
               />
-              <Tooltip 
+              <Tooltip
                 content={<CustomTooltip />}
                 cursor={{ stroke: 'var(--keylio-border-primary)', strokeWidth: 1 }}
               />
@@ -242,7 +242,7 @@ export function AssetChart({ totalValue, className }: AssetChartProps) {
           </div>
         )}
       </div>
-      
+
       {/* Last Update Time - Spec: 「更新於 X 分鐘前」 */}
       <div className="mt-3 text-center">
         <p className="text-xs text-keylio-text-muted">

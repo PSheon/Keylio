@@ -1,6 +1,6 @@
 /**
  * Keylio Wallet - Activity Tracker Hook
- * 
+ *
  * Automatically tracks user activity (mouse, keyboard, touch, scroll)
  * and extends the session timeout.
  */
@@ -36,7 +36,7 @@ export function useActivityTracker(options: UseActivityTrackerOptions = {}) {
     if (!enabled || typeof window === 'undefined') return;
 
     let lastActivity = 0;
-    
+
     const handleActivity = () => {
       const now = Date.now();
       // Throttle activity updates
