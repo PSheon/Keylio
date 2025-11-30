@@ -3,7 +3,6 @@
 import { memo, useState, useCallback } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Fingerprint, Lock } from "lucide-react";
-import { toast } from "sonner";
 import { useSessionContext } from "@/components/providers/SessionProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { decryptData, type EncryptedData } from "@/lib/crypto";
 import { authenticatePasskey } from "@/lib/passkey";
 import db, { type PasskeyMetadata } from "@/lib/storage/db";
+import { showSuccess, showError, showInfo } from "@/lib/toast";
 
 export interface AuthVerificationProps {
   /**
@@ -73,7 +73,7 @@ function AuthVerificationComponent({
       // Authenticate with Passkey
       const result = defaultPasskey?.credentialId
         ? await authenticatePasskey(defaultPasskey.credentialId).catch(() => {
-            toast.info("預設 Passkey 無法使用，請選擇其他");
+            showInfo("預設 Passkey 無法使用", "請選擇其他 Passkey");
             return authenticatePasskey();
           })
         : await authenticatePasskey();
@@ -99,7 +99,7 @@ function AuthVerificationComponent({
         // Get password from session
         const pwd = await getDecryptedPassword();
         if (!pwd) {
-          toast.error("Session 已過期，請使用密碼驗證");
+          showError("Session 已過期", "請使用密碼驗證");
           setShowPasswordInput(true);
           return;
         }
@@ -109,10 +109,10 @@ function AuthVerificationComponent({
         onSuccess("");
       }
 
-      toast.success("驗證成功");
+      showSuccess("驗證成功");
     } catch (error) {
       console.error("Passkey auth failed:", error);
-      toast.error("Passkey 驗證失敗，請使用密碼驗證");
+      showError("Passkey 驗證失敗", "請使用密碼驗證");
       setShowPasswordInput(true);
     } finally {
       setIsAuthenticating(false);
@@ -122,7 +122,7 @@ function AuthVerificationComponent({
   // Handle password authentication
   const handlePasswordAuth = useCallback(async () => {
     if (!authPassword) {
-      toast.error("請輸入密碼");
+      showError("請輸入密碼");
       return;
     }
 
@@ -143,9 +143,9 @@ function AuthVerificationComponent({
 
       onSuccess(authPassword);
       setAuthPassword("");
-      toast.success("驗證成功");
+      showSuccess("驗證成功");
     } catch {
-      toast.error("密碼錯誤");
+      showError("密碼錯誤", "請確認後重試");
     } finally {
       setIsAuthenticating(false);
     }
