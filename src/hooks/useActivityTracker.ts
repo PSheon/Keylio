@@ -1,8 +1,12 @@
+"use client";
+
 /**
  * Keylio Wallet - Activity Tracker Hook
  *
  * Automatically tracks user activity (mouse, keyboard, touch, scroll)
  * and extends the session timeout.
+ *
+ * @module hooks/useActivityTracker
  */
 
 import { useEffect, useCallback } from 'react';

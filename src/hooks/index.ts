@@ -1,17 +1,48 @@
-// Hooks index file for easy imports
+/**
+ * Keylio Wallet - Custom Hooks
+ *
+ * This module exports all custom hooks used across the application.
+ * All hooks are client-side only and follow React 19 best practices.
+ *
+ * @module hooks
+ */
 
-// Wallet selectors
+// ========================================
+// Wallet Hooks
+// ========================================
 export { useActiveWallet } from "./useWalletSelectors";
 
-// Passkey management
+// ========================================
+// Passkey Hooks
+// ========================================
 export { usePasskeyEditor } from "./usePasskeyEditor";
 export { usePasskeyManager } from "./usePasskeyManager";
 
-// Blockchain
-export { useTokenBalance } from "./useTokenBalance";
+// ========================================
+// Blockchain & Token Hooks
+// ========================================
+export {
+  useTokenBalance,
+  useMultiTokenBalance,
+  usePortfolioValue,
+} from "./useTokenBalance";
 
-// Activity tracking
+// ========================================
+// Portfolio Hooks
+// ========================================
+export { usePortfolioHistory } from "./usePortfolioHistory";
+
+// ========================================
+// Transaction Hooks
+// ========================================
+export { useTransactionSync } from "./useTransactionSync";
+
+// ========================================
+// Session & Activity Hooks
+// ========================================
 export { useActivityTracker } from "./useActivityTracker";
 
-// Media query
+// ========================================
+// Utility Hooks
+// ========================================
 export { useMediaQuery } from "./useMediaQuery";

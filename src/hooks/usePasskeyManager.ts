@@ -1,7 +1,13 @@
-import { useState } from 'react';
+"use client";
+
+import { useState, useCallback } from 'react';
 import { registerPasskey, detectDeviceName } from '@/lib/passkey';
 import db, { type PasskeyMetadata } from '@/lib/storage/db';
 import { showSuccess, showError } from '@/lib/toast';
+
+// ========================================
+// Constants
+// ========================================
 
 const PASSKEY_MESSAGES = {
   ALREADY_EXISTS: '此設備已加入',
@@ -13,24 +19,59 @@ const PASSKEY_MESSAGES = {
   CANCELLED: '已取消 Passkey 註冊',
 } as const;
 
-export function usePasskeyManager() {
+// ========================================
+// Types
+// ========================================
+
+interface UsePasskeyManagerReturn {
+  /** Whether a passkey operation is in progress */
+  isProcessing: boolean;
+  /** Register a new passkey */
+  addPasskey: (customName?: string, existingCredentialIds?: string[]) => Promise<PasskeyMetadata | null>;
+  /** Remove a passkey by ID */
+  removePasskey: (id: string) => Promise<boolean>;
+  /** Update a passkey's display name */
+  updatePasskeyName: (id: string, newName: string, existingNames?: string[]) => Promise<boolean>;
+  /** Set a passkey as the default */
+  setDefaultPasskey: (id: string) => Promise<boolean>;
+}
+
+/**
+ * Hook for managing passkey CRUD operations.
+ *
+ * Handles registration, removal, renaming, and default selection of passkeys.
+ * All operations are persisted to IndexedDB and show appropriate toast messages.
+ *
+ * @example
+ * ```tsx
+ * const { isProcessing, addPasskey, removePasskey } = usePasskeyManager();
+ *
+ * const handleAdd = async () => {
+ *   const newPasskey = await addPasskey('My Device');
+ *   if (newPasskey) console.log('Added:', newPasskey.name);
+ * };
+ * ```
+ */
+export function usePasskeyManager(): UsePasskeyManagerReturn {
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const getPasskeysFromDB = async () => {
+  /** Fetch passkeys from IndexedDB */
+  const getPasskeysFromDB = useCallback(async () => {
     const setting = await db.settings.get({ key: 'passkeys_metadata' });
     return {
       passkeys: (setting?.value as PasskeyMetadata[]) || [],
       settingId: setting?.id,
     };
-  };
+  }, []);
 
-  const savePasskeysToDB = async (passkeys: PasskeyMetadata[], settingId?: number) => {
+  /** Save passkeys to IndexedDB */
+  const savePasskeysToDB = useCallback(async (passkeys: PasskeyMetadata[], settingId?: number) => {
     await db.settings.put({
       id: settingId,
       key: 'passkeys_metadata',
       value: passkeys,
     });
-  };
+  }, []);
 
   const addPasskey = async (customName?: string, existingCredentialIds?: string[]) => {
     if (isProcessing) {
