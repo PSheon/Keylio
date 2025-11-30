@@ -197,6 +197,15 @@ export interface RedEnvelopeClaim {
   txHash?: string; // Distribution transaction hash
 }
 
+// Portfolio Snapshot (for historical chart)
+export interface PortfolioSnapshot {
+  id?: number;
+  subWalletId: number; // Reference to sub_wallets.id
+  totalValueUSD: number; // Total portfolio value in USD
+  date: string; // Date in YYYY-MM-DD format (one snapshot per day)
+  createdAt: number; // Actual timestamp
+}
+
 // Payment Request (付款請求)
 export interface PaymentRequest {
   id?: number;
@@ -227,6 +236,7 @@ const db = new Dexie("KeylioWallet") as Dexie & {
   split_bills: EntityTable<SplitBill, "id">;
   red_envelopes: EntityTable<RedEnvelope, "id">;
   payment_requests: EntityTable<PaymentRequest, "id">;
+  portfolio_snapshots: EntityTable<PortfolioSnapshot, "id">;
 };
 
 // Schema definition
@@ -281,6 +291,24 @@ db.version(5).stores({
   split_bills: "++id, shareCode, creatorAddress, status, createdAt",
   red_envelopes: "++id, shareCode, creatorAddress, status, createdAt",
   payment_requests: "++id, recipientAddress, status, createdAt",
+});
+
+// Version 6: Add portfolio snapshots for historical chart
+db.version(6).stores({
+  settings: "++id, &key",
+  sub_wallets: "++id, address, index",
+  transactions: "++id, hash, from, to, timestamp, token, label, subWalletId",
+  contacts: "++id, &address, name, lastUsed, isFavorite",
+  user_preferences: "++id",
+  networks: "++id, chainId, isActive, isCustom",
+  tokens: "++id, [chainId+contractAddress], symbol, isActive",
+  transaction_categories: "++id, name, usageCount",
+  contact_tags: "++id, name",
+  backup_metadata: "++id, type, lastBackupAt",
+  split_bills: "++id, shareCode, creatorAddress, status, createdAt",
+  red_envelopes: "++id, shareCode, creatorAddress, status, createdAt",
+  payment_requests: "++id, recipientAddress, status, createdAt",
+  portfolio_snapshots: "++id, [subWalletId+date], subWalletId, date",
 });
 
 // Initialize default user preferences on first run

@@ -4,10 +4,12 @@
  * Uses Web Crypto API to derive a CryptoKey from the user's password.
  * The CryptoKey is stored in memory and cannot be read by JavaScript.
  * This is more secure than storing the plaintext password.
+ *
+ * NOTE: For React components, use useSessionContext from
+ * '@/components/providers/SessionProvider' instead of importing directly.
  */
 
-import { useCallback,useEffect, useState } from 'react';
-import { ErrorCode,KeylioError } from './errors';
+import { ErrorCode, KeylioError } from './errors';
 
 // ========================================
 // Types
@@ -329,64 +331,6 @@ class SessionManager {
 
 // Export singleton instance
 export const sessionManager = new SessionManager();
-
-// ========================================
-// React Hook
-// ========================================
-
-export function useSession() {
-  const [isActive, setIsActive] = useState(sessionManager.isActive());
-  const [timeRemaining, setTimeRemaining] = useState(sessionManager.getTimeRemaining());
-  const [hasPassword, setHasPassword] = useState(sessionManager.hasStoredPassword());
-
-  useEffect(() => {
-    // Check session status periodically
-    const interval = setInterval(() => {
-      const active = sessionManager.isActive();
-      setIsActive(active);
-      setTimeRemaining(sessionManager.getTimeRemaining());
-      // Also check if password is stored (reactive update)
-      setHasPassword(sessionManager.hasStoredPassword());
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const createSession = useCallback(async (password: string) => {
-    await sessionManager.createSession(password);
-    setIsActive(true);
-  }, []);
-
-  const destroySession = useCallback(() => {
-    sessionManager.destroy(false);
-    setIsActive(false);
-    setHasPassword(false);
-  }, []);
-
-  const recordActivity = useCallback(() => {
-    sessionManager.recordActivity();
-  }, []);
-
-  // Wrapper that updates state after storing password
-  const storePassword = useCallback(async (password: string) => {
-    await sessionManager.storeEncryptedPassword(password);
-    setHasPassword(true);
-  }, []);
-
-  return {
-    isActive,
-    timeRemaining,
-    createSession,
-    destroySession,
-    recordActivity,
-    encrypt: sessionManager.encrypt.bind(sessionManager),
-    decrypt: sessionManager.decrypt.bind(sessionManager),
-    storeEncryptedPassword: storePassword,
-    getDecryptedPassword: sessionManager.getDecryptedPassword.bind(sessionManager),
-    // Return the reactive state value, not the function
-    hasStoredPassword: useCallback(() => hasPassword, [hasPassword]),
-  };
-}
 
 // ========================================
 // Convenience Functions

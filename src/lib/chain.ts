@@ -5,6 +5,12 @@ import { KeylioError, ErrorCode } from "./errors";
 // Chain Configuration
 // ========================================
 
+/** Token contract addresses for a chain */
+export interface ChainTokenAddresses {
+  USDT: string;
+  USDC: string;
+}
+
 export interface ChainConfig {
   chainId: number;
   name: string;
@@ -16,6 +22,8 @@ export interface ChainConfig {
   explorerUrl: string;
   isTestnet: boolean;
   color: string; // Brand color for UI
+  /** Token contract addresses */
+  tokens: ChainTokenAddresses;
 }
 
 // Alchemy API Key from environment
@@ -44,6 +52,10 @@ export const CHAINS: Record<string, ChainConfig> = {
     explorerUrl: 'https://etherscan.io',
     isTestnet: false,
     color: '#627EEA',
+    tokens: {
+      USDT: '0xdAC17F958D2ee523a2206206994597C13D831ec7', // Mainnet USDT
+      USDC: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // Mainnet USDC
+    },
   },
 
   // Ethereum Sepolia Testnet
@@ -64,6 +76,10 @@ export const CHAINS: Record<string, ChainConfig> = {
     explorerUrl: 'https://sepolia.etherscan.io',
     isTestnet: true,
     color: '#627EEA',
+    tokens: {
+      USDT: '0xaA8E23Fb1079EA71e0a56F48a2aA51851D8433D0', // Sepolia USDT
+      USDC: '0x94a9D9AC8a22534E3FaCa9F4e7F2E2cf85d5E4C8', // Sepolia USDC
+    },
   },
 
   // Plasma Mainnet
@@ -77,6 +93,10 @@ export const CHAINS: Record<string, ChainConfig> = {
     explorerUrl: 'https://explorer.plasm.finance',
     isTestnet: false,
     color: '#14B8A6', // Teal color
+    tokens: {
+      USDT: '0x0000000000000000000000000000000000000000', // TODO: Add Plasma USDT address
+      USDC: '0x0000000000000000000000000000000000000000', // TODO: Add Plasma USDC address
+    },
   },
 
   // Plasma Testnet
@@ -90,7 +110,18 @@ export const CHAINS: Record<string, ChainConfig> = {
     explorerUrl: 'https://testnet-explorer.plasm.finance',
     isTestnet: true,
     color: '#14B8A6',
+    tokens: {
+      USDT: '0x0000000000000000000000000000000000000000', // TODO: Add Plasma Testnet USDT address
+      USDC: '0x0000000000000000000000000000000000000000', // TODO: Add Plasma Testnet USDC address
+    },
   },
+};
+
+/**
+ * Get token addresses for the active chain
+ */
+export const getActiveChainTokens = (): ChainTokenAddresses => {
+  return ACTIVE_CHAIN.tokens;
 };
 
 // ========================================
@@ -308,7 +339,5 @@ export const parseBalance = (amount: string, decimals: number = 18): bigint => {
   return ethers.parseUnits(amount, decimals);
 };
 
-export const shortenAddress = (address: string): string => {
-  if (!address) return "";
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
-};
+// NOTE: For address shortening, use shortenAddress from '@/lib/formatters'
+// This avoids duplicate implementations
