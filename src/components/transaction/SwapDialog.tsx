@@ -9,7 +9,6 @@ import {
   Info,
   Fingerprint,
 } from "lucide-react";
-import { toast } from "sonner";
 import { useShallow } from 'zustand/react/shallow';
 import { Button } from "@/components/ui/button";
 import {
@@ -28,7 +27,8 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { fadeInUp } from "@/lib/animations";
+import { fadeInUp, stepTransition, fadeIn } from "@/lib/animations";
+import { showSuccess, showError } from "@/lib/toast";
 import { formatUSD } from "@/lib/tokens";
 import { useWalletStore } from "@/stores/useWalletStore";
 
@@ -113,11 +113,11 @@ function SwapDialogComponent({ trigger, onSuccess }: SwapDialogProps) {
 
   const handlePreview = () => {
     if (!amount || parseFloat(amount) <= 0) {
-      toast.error("請輸入兌換金額");
+      showError("請輸入兌換金額");
       return;
     }
     if (fromTokenData && parseFloat(amount) > fromTokenData.balance) {
-      toast.error("餘額不足");
+      showError("餘額不足", "兌換金額超過可用餘額");
       return;
     }
     setStep('preview');
@@ -133,10 +133,10 @@ function SwapDialogComponent({ trigger, onSuccess }: SwapDialogProps) {
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       setStep('success');
-      toast.success("兌換成功！");
+      showSuccess("兌換成功", `已將 ${amount} ${fromToken} 兌換為 ${receiveAmount} ${toToken}`);
       onSuccess?.();
     } catch {
-      toast.error("兌換失敗，請重試");
+      showError("兌換失敗", "請稍後重試");
       setStep('preview');
     } finally {
       setIsProcessing(false);
@@ -184,9 +184,10 @@ function SwapDialogComponent({ trigger, onSuccess }: SwapDialogProps) {
           {step === 'input' && (
             <motion.div
               key="input"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
+              variants={stepTransition}
+              initial="initial"
+              animate="animate"
+              exit="exit"
               className="space-y-6"
             >
               {/* From Token */}
@@ -316,9 +317,10 @@ function SwapDialogComponent({ trigger, onSuccess }: SwapDialogProps) {
           {step === 'preview' && (
             <motion.div
               key="preview"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
+              variants={stepTransition}
+              initial="initial"
+              animate="animate"
+              exit="exit"
               className="space-y-6"
             >
               <div className="bg-keylio-bg-tertiary rounded-xl p-6 text-center">
@@ -371,9 +373,10 @@ function SwapDialogComponent({ trigger, onSuccess }: SwapDialogProps) {
           {step === 'processing' && (
             <motion.div
               key="processing"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              variants={fadeIn}
+              initial="initial"
+              animate="animate"
+              exit="exit"
               className="py-12 text-center"
             >
               <Loader2 className="w-12 h-12 mx-auto mb-4 text-keylio-teal animate-spin" />

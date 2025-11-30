@@ -7,11 +7,11 @@ import {
   ArrowUpFromLine,
   ArrowRightLeft,
 } from "lucide-react";
-import { toast } from "sonner";
 import { ReceiveDialog } from "@/components/transaction/ReceiveDialog";
 import { SendDialog } from "@/components/transaction/SendDialog";
 import { SwapDialog } from "@/components/transaction/SwapDialog";
 import { fadeInUp } from "@/lib/animations";
+import { showInfo } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 interface QuickActionGridProps {
@@ -55,9 +55,7 @@ const ACTION_STYLES = {
  */
 function QuickActionGridComponent({ walletAddress, hasBalance }: QuickActionGridProps) {
   const handleDisabledAction = (action: string) => {
-    toast.info(`${action}需要有餘額`, {
-      description: "點擊「收款」按鈕獲取資金",
-    });
+    showInfo(`${action}需要有餘額`, "點擊「收款」按鈕獲取資金");
   };
 
   return (

@@ -3,7 +3,6 @@
 import { useState, memo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Eye, EyeOff, ShieldCheck, Fingerprint, Plus, Trash2, Edit2, Check, X, Sparkles } from "lucide-react";
-import { toast } from "sonner";
 import { useSessionContext } from "@/components/providers/SessionProvider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -14,6 +13,7 @@ import { usePasskeyManager } from "@/hooks/usePasskeyManager";
 import { deriveWallet, deriveXpub, encryptData, encryptPasswordForStorage } from "@/lib/crypto";
 import db from "@/lib/storage/db";
 import type { PasskeyMetadata } from "@/lib/storage/db";
+import { showSuccess, showError } from "@/lib/toast";
 import { useWalletStore } from "@/stores/useWalletStore";
 interface WalletSetupWizardProps {
   onComplete: () => void;
@@ -69,7 +69,7 @@ export const WalletSetupWizard = memo(function WalletSetupWizard({ onComplete }:
 
   const handleStep1 = useCallback(() => {
     if (!isPasswordValid) {
-      toast.error("請確認密碼強度符合要求且兩次輸入一致");
+      showError("密碼不符合要求", "請確認密碼強度且兩次輸入一致");
       return;
     }
     setStep(2);
@@ -101,12 +101,12 @@ export const WalletSetupWizard = memo(function WalletSetupWizard({ onComplete }:
 
   const handleCompleteSetup = useCallback(async () => {
     if (!tempMnemonic) {
-      toast.error("發生錯誤：助記詞遺失，請重新開始");
+      showError("發生錯誤", "助記詞遺失，請重新開始");
       return;
     }
 
     if (passkeys.length === 0) {
-      toast.error("請至少設定一個 Passkey");
+      showError("請至少設定一個 Passkey");
       return;
     }
 
@@ -166,12 +166,12 @@ export const WalletSetupWizard = memo(function WalletSetupWizard({ onComplete }:
       // Store password in session for Passkey-based operations (e.g., backup mnemonic)
       await storeEncryptedPassword(password);
       clearTempMnemonic();
-      toast.success("錢包創建成功！");
+      showSuccess("錢包創建成功", "歡迎使用 Keylio");
       onComplete();
 
     } catch (error) {
       console.error(error);
-      toast.error("創建失敗，請重試");
+      showError("創建失敗", "請稍後重試");
     } finally {
       setIsProcessing(false);
     }

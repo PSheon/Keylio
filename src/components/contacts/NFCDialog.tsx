@@ -10,7 +10,6 @@ import {
   Smartphone,
   X,
 } from "lucide-react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,6 +19,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { fadeInUp } from "@/lib/animations";
+import { showSuccess, showError } from "@/lib/toast";
 import { useWalletStore } from "@/stores/useWalletStore";
 
 interface NFCDialogProps {
@@ -105,7 +105,7 @@ function NFCDialogComponent({ isOpen, onClose, onReceive, mode }: NFCDialogProps
           }
         }
 
-        toast.error("讀取到無效的 NFC 資料");
+        showError("讀取到無效的 NFC 資料");
       });
 
       ndef.addEventListener("readingerror", () => {
@@ -132,7 +132,7 @@ function NFCDialogComponent({ isOpen, onClose, onReceive, mode }: NFCDialogProps
   const startSending = useCallback(async () => {
     if (!checkNFCSupport()) return;
     if (!currentWallet?.address) {
-      toast.error("請先建立或解鎖錢包");
+      showError("請先建立或解鎖錢包");
       return;
     }
 
@@ -158,7 +158,7 @@ function NFCDialogComponent({ isOpen, onClose, onReceive, mode }: NFCDialogProps
       });
 
       setNfcState("success");
-      toast.success("已成功寫入 NFC");
+      showSuccess("已成功寫入 NFC");
 
     } catch (error: unknown) {
       console.error("NFC write error:", error);

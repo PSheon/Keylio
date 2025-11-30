@@ -2,7 +2,6 @@
 
 import { memo } from "react";
 import { DollarSign } from "lucide-react";
-import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -11,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { showSuccess } from "@/lib/toast";
 import { useSettingsStore } from "@/stores/useSettingsStore";
 
 /** 貨幣選項 */
@@ -30,28 +30,28 @@ function CurrencySettingsComponent() {
   const handleChange = (value: string) => {
     setCurrency(value as "USD" | "TWD");
     const selected = CURRENCY_OPTIONS.find((opt) => opt.value === value);
-    toast.success(`貨幣單位已變更為 ${selected?.label || value}`);
+    showSuccess("貨幣單位已變更", selected?.label || value);
   };
 
   const currentOption = CURRENCY_OPTIONS.find((opt) => opt.value === currency);
 
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between py-3">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center">
           <DollarSign className="w-5 h-5 text-emerald-400" />
         </div>
         <div>
-          <Label className="text-keylio-text-primary font-medium">
-            貨幣顯示單位
+          <Label className="text-base text-keylio-text-primary font-medium">
+            貨幣單位
           </Label>
-          <p className="text-xs text-keylio-text-muted">
-            選擇偏好的法幣顯示單位
+          <p className="text-[13px] text-keylio-text-muted/70">
+            偏好的法幣單位
           </p>
         </div>
       </div>
       <Select value={currency} onValueChange={handleChange}>
-        <SelectTrigger className="w-[140px] bg-keylio-bg-tertiary border-keylio-border-primary text-keylio-text-primary">
+        <SelectTrigger className="w-[130px] h-10 bg-keylio-bg-tertiary border-2 border-keylio-border-primary text-keylio-text-primary rounded-lg">
           <SelectValue placeholder="選擇貨幣">
             {currentOption ? <span className="flex items-center gap-1.5">
                 <span className="text-keylio-text-muted">{currentOption.symbol}</span>

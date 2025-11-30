@@ -27,22 +27,22 @@ function HideBalanceSettingsComponent() {
   const setHideBalances = useSettingsStore((state) => state.setHideBalances);
 
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between py-3">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-full bg-keylio-bg-tertiary flex items-center justify-center">
           <Eye className="w-5 h-5 text-keylio-text-secondary" />
         </div>
         <div>
-          <Label className="text-keylio-text-primary font-medium">
+          <Label className="text-base text-keylio-text-primary font-medium">
             隱藏餘額
           </Label>
-          <p className="text-xs text-keylio-text-muted">
-            控制主畫面金額顯示方式
+          <p className="text-[13px] text-keylio-text-muted/70">
+            控制金額顯示方式
           </p>
         </div>
       </div>
       <Select value={hideBalances} onValueChange={setHideBalances}>
-        <SelectTrigger className="w-[130px] bg-keylio-bg-tertiary border-keylio-border-primary text-keylio-text-primary">
+        <SelectTrigger className="w-[120px] h-10 bg-keylio-bg-tertiary border-2 border-keylio-border-primary text-keylio-text-primary rounded-lg">
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="bg-keylio-bg-secondary border-keylio-border-primary">

@@ -18,7 +18,6 @@ import {
   Tag,
   FileText,
 } from "lucide-react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -36,6 +35,7 @@ import {
 import { ACTIVE_CHAIN } from "@/lib/chain";
 import { formatCurrency, formatDateTime, shortenAddress } from "@/lib/formatters";
 import type { Transaction } from "@/lib/storage/db";
+import { showSuccess } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 interface TransactionDetailDialogProps {
@@ -88,7 +88,7 @@ function TransactionDetailDialogComponent({
   // 複製到剪貼簿
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
-    toast.success(`${label} 已複製`);
+    showSuccess(`${label} 已複製`);
   };
 
   // 開啟區塊瀏覽器

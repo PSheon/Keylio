@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { ethers } from "ethers";
 import { ArrowRight, Fingerprint, CheckCircle, Loader2, Users, Zap, Sparkles, ExternalLink } from "lucide-react";
-import { toast } from "sonner";
 import { ContactPickerDialog } from "@/components/contacts/ContactPickerDialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -15,6 +14,7 @@ import { useTokenBalance } from "@/hooks/useTokenBalance";
 import { ACTIVE_CHAIN } from "@/lib/chain";
 import { KeylioError, ErrorCode } from "@/lib/errors";
 import { authenticatePasskey } from "@/lib/passkey";
+import { showSuccess, showError } from "@/lib/toast";
 import { getAllTokens, formatTokenAmount, formatUSD, getTokenValueUSD } from "@/lib/tokens";
 import { sendTransactionWithSession, validateTransaction, type TransactionResult } from "@/lib/transaction";
 import { useWalletStore } from "@/stores/useWalletStore";
@@ -85,11 +85,11 @@ export function SendDialog({
 
   const handlePreview = () => {
     if (!recipient || !amount) {
-      toast.error("請輸入完整資訊");
+      showError("請輸入完整資訊");
       return;
     }
     if (!ethers.isAddress(recipient)) {
-      toast.error("無效的錢包地址");
+      showError("無效的錢包地址", "請確認地址格式");
       return;
     }
 
@@ -97,7 +97,7 @@ export function SendDialog({
     const numBalance = parseFloat(formattedBalance);
 
     if (numAmount > numBalance) {
-      toast.error("餘額不足");
+      showError("餘額不足", "發送金額超過可用餘額");
       return;
     }
 
@@ -119,7 +119,7 @@ export function SendDialog({
       });
 
       if (!validation.isValid) {
-        toast.error(validation.error || "交易驗證失敗");
+        showError("交易驗證失敗", validation.error || undefined);
         setIsProcessing(false);
         return;
       }
@@ -135,7 +135,7 @@ export function SendDialog({
 
       setTxResult(result);
       setStep('success');
-      toast.success("交易已發送");
+      showSuccess("交易已發送", `${amount} ${selectedToken} 已發送至 ${recipientName || recipient.slice(0, 10)}...`);
       if (onSuccess) onSuccess();
     } catch (error) {
       console.error(error);
@@ -143,22 +143,22 @@ export function SendDialog({
       if (error instanceof KeylioError) {
         switch (error.code) {
           case ErrorCode.AUTH_SESSION_EXPIRED:
-            toast.error("會話已過期，請重新登入");
+            showError("會話已過期", "請重新登入");
             break;
           case ErrorCode.WALLET_DECRYPTION_FAILED:
-            toast.error("解密失敗，請重新登入");
+            showError("解密失敗", "請重新登入");
             break;
           case ErrorCode.TX_INSUFFICIENT_BALANCE:
-            toast.error("餘額不足");
+            showError("餘額不足", "發送金額超過可用餘額");
             break;
           case ErrorCode.TX_GAS_ESTIMATION_FAILED:
-            toast.error("Gas 估算失敗，請稍後再試");
+            showError("Gas 估算失敗", "請稍後再試");
             break;
           default:
-            toast.error(error.message || "交易失敗");
+            showError("交易失敗", error.message || undefined);
         }
       } else {
-        toast.error("驗證失敗或取消");
+        showError("驗證失敗或取消");
       }
     } finally {
       setIsProcessing(false);

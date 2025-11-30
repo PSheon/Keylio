@@ -2,7 +2,6 @@
 
 import { useState, useCallback } from "react";
 import { Loader2, Shield } from "lucide-react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import db from "@/lib/storage/db";
+import { showSuccess, showError } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useWalletStore } from "@/stores/useWalletStore";
 
@@ -136,7 +136,7 @@ export function CreateWalletDialog({ trigger, onSuccess }: CreateWalletDialogPro
 
   const handleCreate = useCallback(async () => {
     if (!name.trim()) {
-      toast.error("請輸入錢包名稱");
+      showError("請輸入錢包名稱");
       return;
     }
 
@@ -163,14 +163,14 @@ export function CreateWalletDialog({ trigger, onSuccess }: CreateWalletDialogPro
       const id = await db.sub_wallets.add(newWallet);
       addWallet({ ...newWallet, id });
 
-      toast.success("子錢包創建成功");
+      showSuccess("子錢包創建成功", `${emoji} ${name} 已新增`);
       setIsOpen(false);
       resetForm();
       onSuccess?.();
 
     } catch (error) {
       console.error(error);
-      toast.error("創建失敗");
+      showError("創建失敗", "請稍後重試");
     } finally {
       setIsProcessing(false);
     }

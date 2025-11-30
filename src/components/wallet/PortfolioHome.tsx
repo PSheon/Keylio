@@ -2,12 +2,11 @@
 
 import { useState, useMemo, memo, useCallback } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
-import { motion } from "framer-motion";
-import { toast } from "sonner";
 import { useShallow } from "zustand/react/shallow";
+import { PageTransition, PageSection } from "@/components/ui/page-transition";
 import { useMultiTokenBalance } from "@/hooks/useTokenBalance";
-import { staggerContainer } from "@/lib/animations";
 import db from "@/lib/storage/db";
+import { showSuccess, showError } from "@/lib/toast";
 import { getAllTokens, formatTokenAmount, getTokenValueUSD } from "@/lib/tokens";
 import { useWalletStore } from "@/stores/useWalletStore";
 import { AssetChart } from "./AssetChart";
@@ -99,27 +98,24 @@ function PortfolioHomeComponent() {
     setIsRefreshing(true);
     try {
       await refetch();
-      toast.success("已更新");
+      showSuccess("已更新");
     } catch {
-      toast.error("更新失敗");
+      showError("更新失敗");
     } finally {
       setIsRefreshing(false);
     }
   }, [refetch]);
 
   return (
-    <motion.div
-      className="space-y-6"
-      variants={staggerContainer}
-      initial="initial"
-      animate="animate"
-    >
+    <PageTransition>
       {/* 1. Header with Wallet Switcher */}
-      <PortfolioHeader isRefreshing={isRefreshing} onRefresh={handleRefresh} />
+      <PageSection>
+        <PortfolioHeader isRefreshing={isRefreshing} onRefresh={handleRefresh} />
+      </PageSection>
 
       {/* ===== Overview 區塊 ===== */}
       {/* 總資產 KPI + 資產變化圖表視覺上形成一個區塊 */}
-      <div className="space-y-4">
+      <PageSection className="space-y-4">
         {/* 2. 全局總資產 KPI (View-only) */}
         <PortfolioBalance
           totalValueUSD={totalValueUSD}
@@ -129,23 +125,29 @@ function PortfolioHomeComponent() {
 
         {/* 3. 資產變化圖表 */}
         <AssetChart totalValue={totalValueUSD} />
-      </div>
+      </PageSection>
 
       {/* ===== 操作區塊 ===== */}
       {/* 與 Overview 區塊之間有視覺分隔（space-y-6 已提供） */}
 
       {/* 4. 快速操作 */}
-      <QuickActionGrid walletAddress={walletAddress} hasBalance={hasBalance} />
+      <PageSection>
+        <QuickActionGrid walletAddress={walletAddress} hasBalance={hasBalance} />
+      </PageSection>
 
       {/* 5. 穩定幣資產卡片 - Tab 切換（按幣種/按用途）+ 完整資產入口 */}
-      <StablecoinAssetCard />
+      <PageSection>
+        <StablecoinAssetCard />
+      </PageSection>
 
       {/* 6. 近期活動 */}
-      <RecentActivityList
-        transactions={recentTransactions}
-        walletAddress={walletAddress}
-      />
-    </motion.div>
+      <PageSection>
+        <RecentActivityList
+          transactions={recentTransactions}
+          walletAddress={walletAddress}
+        />
+      </PageSection>
+    </PageTransition>
   );
 }
 

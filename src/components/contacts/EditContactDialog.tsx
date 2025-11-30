@@ -3,7 +3,6 @@
 import { useState, useEffect, memo } from "react";
 import { ethers } from "ethers";
 import { Edit, Loader2, Trash2 } from "lucide-react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import db, { type Contact } from "@/lib/storage/db";
+import { showSuccess, showError } from "@/lib/toast";
 
 // 常用 Emoji 列表
 const EMOJI_LIST = ["👤", "😀", "😎", "🤝", "💼", "🏠", "❤️", "⭐", "🎯", "🚀", "💰", "🔥"];
@@ -123,11 +123,11 @@ function EditContactDialogComponent({
         emoji,
       });
 
-      toast.success("聯絡人已更新");
+      showSuccess("聯絡人已更新", `${emoji} ${name.trim()}`);
       onOpenChange(false);
     } catch (error) {
       console.error("Failed to update contact:", error);
-      toast.error("更新失敗，請重試");
+      showError("更新失敗", "請稍後重試");
     } finally {
       setIsSubmitting(false);
     }
@@ -141,12 +141,12 @@ function EditContactDialogComponent({
 
     try {
       await db.contacts.delete(contact.id);
-      toast.success("聯絡人已刪除");
+      showSuccess("聯絡人已刪除", contact.name);
       onOpenChange(false);
       onDelete?.();
     } catch (error) {
       console.error("Failed to delete contact:", error);
-      toast.error("刪除失敗");
+      showError("刪除失敗");
     } finally {
       setIsSubmitting(false);
       setShowDeleteConfirm(false);

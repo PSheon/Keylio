@@ -11,7 +11,6 @@ import {
   Check,
   X,
 } from "lucide-react";
-import { toast } from "sonner";
 import { AuthVerification } from "@/components/auth/AuthVerification";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { usePasskeyEditor } from "@/hooks/usePasskeyEditor";
 import { usePasskeyManager } from "@/hooks/usePasskeyManager";
 import db, { type PasskeyMetadata } from "@/lib/storage/db";
+import { showError } from "@/lib/toast";
 
 interface PasskeyDialogProps {
   open: boolean;
@@ -69,7 +69,7 @@ function PasskeyDialogComponent({ open, onOpenChange }: PasskeyDialogProps) {
 
   const handleAddPasskey = async () => {
     if (!newPasskeyName.trim()) {
-      toast.error("請輸入 Passkey 名稱");
+      showError("請輸入 Passkey 名稱");
       return;
     }
 

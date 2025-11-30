@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { motion } from "framer-motion";
 import { Lock, ArrowRight, Fingerprint, Unlock } from "lucide-react";
-import { toast } from "sonner";
 import { useSessionContext } from "@/components/providers/SessionProvider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -14,6 +13,7 @@ import type { EncryptedData } from "@/lib/crypto";
 import { authenticatePasskey } from "@/lib/passkey";
 import db from "@/lib/storage/db";
 import type { PasskeyMetadata } from "@/lib/storage/db";
+import { showSuccess, showError, showInfo } from "@/lib/toast";
 import { useWalletStore } from "@/stores/useWalletStore";
 
 interface UnlockScreenProps {
@@ -39,7 +39,7 @@ export function UnlockScreen({ onUnlock }: UnlockScreenProps) {
 
   const handleUnlock = async () => {
     if (!password) {
-      toast.error("請輸入密碼");
+      showError("請輸入密碼");
       setIsShake(true);
       setTimeout(() => setIsShake(false), 500);
       return;
@@ -58,10 +58,10 @@ export function UnlockScreen({ onUnlock }: UnlockScreenProps) {
       // Store encrypted password in session for sensitive operations (e.g., backup mnemonic)
       await storeEncryptedPassword(password);
       onUnlock();
-      toast.success("歡迎回來！");
+      showSuccess("歡迎回來");
     } catch (error) {
       console.error(error);
-      toast.error("密碼錯誤");
+      showError("密碼錯誤", "請確認後重試");
       setIsShake(true);
       setTimeout(() => setIsShake(false), 500);
     } finally {
@@ -75,7 +75,7 @@ export function UnlockScreen({ onUnlock }: UnlockScreenProps) {
       // Try default Passkey first, fallback to user selection
       const result = defaultPasskey?.credentialId
         ? await authenticatePasskey(defaultPasskey.credentialId).catch(() => {
-            toast.info("預設 Passkey 無法使用，請選擇其他");
+            showInfo("預設 Passkey 無法使用", "請選擇其他 Passkey");
             return authenticatePasskey();
           })
         : await authenticatePasskey();
@@ -107,11 +107,11 @@ export function UnlockScreen({ onUnlock }: UnlockScreenProps) {
       }
 
       setUnlocked(true);
-      toast.success("驗證成功");
+      showSuccess("驗證成功");
       onUnlock();
     } catch (error) {
       console.error("Passkey unlock failed:", error);
-      toast.error("驗證失敗，請使用密碼登入");
+      showError("驗證失敗", "請使用密碼登入");
     } finally {
       setIsProcessing(false);
     }

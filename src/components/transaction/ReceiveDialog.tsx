@@ -11,12 +11,12 @@ import {
   CheckCircle2
 } from "lucide-react";
 import QRCodeLib from "qrcode";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { showSuccess } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 // ============================================================================
@@ -47,7 +47,7 @@ function AddressCard({
   const handleCopy = () => {
     navigator.clipboard.writeText(address);
     setCopied(true);
-    toast.success("地址已複製");
+    showSuccess("地址已複製");
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -126,7 +126,7 @@ function ShareButtons({
           title: '我的錢包地址',
           text: shareText,
         });
-        toast.success("分享成功");
+        showSuccess("分享成功");
       } catch (error) {
         if ((error as Error).name !== 'AbortError') {
           onCopy();
@@ -208,13 +208,13 @@ export function ReceiveDialog({ address, trigger }: ReceiveDialogProps) {
 
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(address);
-    toast.success("地址已複製");
+    showSuccess("地址已複製");
   }, [address]);
 
   const handleCopyPaymentLink = useCallback(() => {
     if (!paymentUri) return;
     navigator.clipboard.writeText(paymentUri);
-    toast.success("付款連結已複製");
+    showSuccess("付款連結已複製");
   }, [paymentUri]);
 
   return (

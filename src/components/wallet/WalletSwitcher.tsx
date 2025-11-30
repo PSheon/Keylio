@@ -10,7 +10,6 @@ import {
   Loader2,
   MoreHorizontal,
 } from "lucide-react";
-import { toast } from "sonner";
 import { useShallow } from "zustand/react/shallow";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +26,7 @@ import { Label } from "@/components/ui/label";
 import { deriveAddressFromXpub } from "@/lib/crypto";
 import db from "@/lib/storage/db";
 import type { SubWallet } from "@/lib/storage/db";
+import { showSuccess, showError, showInfo } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useWalletStore } from "@/stores/useWalletStore";
 
@@ -175,7 +175,7 @@ export function WalletSwitcher() {
     if (wallet.id) {
       setActiveWallet(wallet.id);
       setIsListOpen(false);
-      toast.success(`已切換至 ${wallet.name}`);
+      showSuccess(`已切換至 ${wallet.name}`);
     }
   }, [setActiveWallet]);
 
@@ -183,13 +183,13 @@ export function WalletSwitcher() {
     e.stopPropagation();
     navigator.clipboard.writeText(wallet.address);
     setCopiedId(wallet.id ?? null);
-    toast.success("地址已複製");
+    showSuccess("地址已複製");
     setTimeout(() => setCopiedId(null), 2000);
   }, []);
 
   const handleCreateWallet = useCallback(async () => {
     if (!newWalletName.trim()) {
-      toast.error("請輸入錢包名稱");
+      showError("請輸入錢包名稱");
       return;
     }
 
@@ -203,7 +203,7 @@ export function WalletSwitcher() {
       if (xpubSetting?.value) {
         newAddress = deriveAddressFromXpub(xpubSetting.value as string, nextIndex);
       } else {
-        toast.error("無法派生新地址，請重新設置錢包");
+        showError("無法派生新地址", "請重新設置錢包");
         setIsCreating(false);
         return;
       }
@@ -220,14 +220,14 @@ export function WalletSwitcher() {
       const id = await db.sub_wallets.add(newWallet);
       addWallet({ ...newWallet, id });
 
-      toast.success("子錢包創建成功");
+      showSuccess("子錢包創建成功", newWalletName.trim());
       setIsCreateOpen(false);
       setNewWalletName("");
       setSelectedEmoji(EMOJI_OPTIONS[0]);
       setSelectedColor(COLOR_OPTIONS[0]);
     } catch (error) {
       console.error("Create wallet error:", error);
-      toast.error("創建失敗");
+      showError("創建失敗");
     } finally {
       setIsCreating(false);
     }
@@ -236,7 +236,7 @@ export function WalletSwitcher() {
   const handleWalletMore = useCallback((e: React.MouseEvent, wallet: SubWallet) => {
     e.stopPropagation();
     // TODO: Show menu with edit/delete options
-    toast.info(`${wallet.name} 的更多選項`);
+    showInfo(`${wallet.name} 的更多選項`);
   }, []);
 
   return (

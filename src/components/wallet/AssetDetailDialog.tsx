@@ -13,7 +13,6 @@ import {
   Search,
   ArrowUpDown,
 } from "lucide-react";
-import { toast } from "sonner";
 import { ReceiveDialog } from "@/components/transaction/ReceiveDialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,6 +30,7 @@ import { useMultiTokenBalance } from "@/hooks/useTokenBalance";
 import { staggerItem, staggerContainer } from "@/lib/animations";
 import { ACTIVE_CHAIN } from "@/lib/chain";
 import { formatUSD, formatCurrency, formatTokenBalance, formatPercent } from "@/lib/formatters";
+import { showSuccess, showError } from "@/lib/toast";
 import { getAllTokens, formatTokenAmount, getTokenValueUSD } from "@/lib/tokens";
 import { cn } from "@/lib/utils";
 import { useSettingsStore } from "@/stores/useSettingsStore";
@@ -185,9 +185,9 @@ function AssetDetailDialogComponent({ trigger }: AssetDetailDialogProps) {
     setIsRefreshing(true);
     try {
       await refetch();
-      toast.success("餘額已更新");
+      showSuccess("餘額已更新");
     } catch {
-      toast.error("更新失敗");
+      showError("更新失敗");
     } finally {
       setIsRefreshing(false);
     }

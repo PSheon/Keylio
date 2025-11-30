@@ -10,7 +10,6 @@ import {
   Check,
   Lock,
 } from "lucide-react";
-import { toast } from "sonner";
 import { AuthVerification } from "@/components/auth/AuthVerification";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { decryptData, type EncryptedData } from "@/lib/crypto";
 import db from "@/lib/storage/db";
+import { showSuccess, showError } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 interface BackupMnemonicDialogProps {
@@ -99,14 +99,14 @@ function BackupMnemonicDialogComponent({
       setStep("warning");
     } catch (error) {
       console.error("Failed to decrypt mnemonic:", error);
-      toast.error("解密助記詞失敗");
+      showError("解密助記詞失敗");
     }
   }, [generateVerifyIndices]);
 
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(mnemonic.join(" "));
     setCopied(true);
-    toast.success("已複製到剪貼簿");
+    showSuccess("已複製到剪貼簿");
     setTimeout(() => setCopied(false), 2000);
   }, [mnemonic]);
 
@@ -118,10 +118,10 @@ function BackupMnemonicDialogComponent({
     );
 
     if (isCorrect) {
-      toast.success("備份驗證成功！請妥善保管您的助記詞");
+      showSuccess("備份驗證成功", "請妥善保管您的助記詞");
       handleOpenChange(false);
     } else {
-      toast.error("驗證失敗，請重新輸入");
+      showError("驗證失敗", "請重新輸入");
       setUserInputs(["", "", ""]);
     }
 

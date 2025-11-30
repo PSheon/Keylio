@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Copy, Share2, QrCode, CheckCircle2 } from "lucide-react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,6 +10,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { showSuccess, showError } from "@/lib/toast";
 import { useWalletStore } from "@/stores/useWalletStore";
 import { ContactQRCode } from "./ContactQRCode";
 
@@ -41,10 +41,10 @@ export function ShareAddressDialog({ open, onOpenChange }: ShareAddressDialogPro
     try {
       await navigator.clipboard.writeText(address);
       setCopied(true);
-      toast.success("地址已複製到剪貼簿");
+      showSuccess("地址已複製到剪貼簿");
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error("複製失敗，請手動複製");
+      showError("複製失敗", "請手動複製");
     }
   };
 
@@ -61,11 +61,11 @@ export function ShareAddressDialog({ open, onOpenChange }: ShareAddressDialogPro
     if (navigator.share && navigator.canShare(shareData)) {
       try {
         await navigator.share(shareData);
-        toast.success("已開啟分享選單");
+        showSuccess("已開啟分享選單");
       } catch (error) {
         // 用戶取消分享不算錯誤
         if ((error as Error).name !== "AbortError") {
-          toast.error("分享失敗");
+          showError("分享失敗");
         }
       }
     } else {

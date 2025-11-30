@@ -25,17 +25,17 @@ function LargeTransferSettingsComponent() {
   const setThreshold = useSettingsStore((state) => state.setLargeTransferThreshold);
 
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between py-3">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
           <AlertTriangle className="w-5 h-5 text-amber-400" />
         </div>
         <div>
-          <Label className="text-keylio-text-primary font-medium">
-            大額轉帳警告
+          <Label className="text-base text-keylio-text-primary font-medium">
+            大額警告
           </Label>
-          <p className="text-xs text-keylio-text-muted">
-            超過此金額時顯示額外確認
+          <p className="text-[13px] text-keylio-text-muted/70">
+            超額時顯示確認
           </p>
         </div>
       </div>
@@ -43,7 +43,7 @@ function LargeTransferSettingsComponent() {
         value={threshold.toString()}
         onValueChange={(val) => setThreshold(Number(val))}
       >
-        <SelectTrigger className="w-[120px] bg-keylio-bg-tertiary border-keylio-border-primary text-keylio-text-primary">
+        <SelectTrigger className="w-[110px] h-10 bg-keylio-bg-tertiary border-2 border-keylio-border-primary text-keylio-text-primary rounded-lg">
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="bg-keylio-bg-secondary border-keylio-border-primary">

@@ -3,12 +3,12 @@
 import { memo } from "react";
 import { motion } from "framer-motion";
 import { Copy, ExternalLink } from "lucide-react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { staggerItem } from "@/lib/animations";
 import { ACTIVE_CHAIN } from "@/lib/chain";
 import { formatUSD, formatTokenBalance } from "@/lib/formatters";
+import { showSuccess } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 /** StablecoinRow 變體 */
@@ -57,7 +57,7 @@ function StablecoinRowComponent({
     e.stopPropagation();
     if (coin.contractAddress) {
       navigator.clipboard.writeText(coin.contractAddress);
-      toast.success("合約地址已複製");
+      showSuccess("合約地址已複製");
     }
   };
 

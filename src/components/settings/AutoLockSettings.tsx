@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Clock } from "lucide-react";
-import { toast } from "sonner";
 import {
   Select,
   SelectContent,
@@ -11,6 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { sessionManager } from "@/lib/session";
+import { showSuccess } from "@/lib/toast";
 import { useSettingsStore } from "@/stores/useSettingsStore";
 
 const AUTO_LOCK_OPTIONS = [
@@ -38,7 +38,7 @@ export function AutoLockSettings() {
     // Update session manager
     sessionManager.configure({ autoLockMinutes: minutes });
 
-    toast.success(`自動鎖定時間已更新為 ${minutes === 0 ? '永不' : `${minutes} 分鐘`}`);
+    showSuccess("自動鎖定時間已更新", minutes === 0 ? '永不' : `${minutes} 分鐘`);
   };
 
   return (
@@ -48,12 +48,12 @@ export function AutoLockSettings() {
           <Clock className="w-5 h-5 text-amber-400" />
         </div>
         <div>
-          <p className="font-medium text-keylio-text-primary">自動鎖定</p>
-          <p className="text-sm text-keylio-text-muted">閒置後自動鎖定錢包</p>
+          <p className="text-base font-medium text-keylio-text-primary">自動鎖定</p>
+          <p className="text-[13px] text-keylio-text-muted/70">閒置後鎖定錢包</p>
         </div>
       </div>
       <Select value={selectedValue} onValueChange={handleChange}>
-        <SelectTrigger className="w-[140px] bg-keylio-bg-tertiary border-keylio-border-primary text-keylio-text-primary">
+        <SelectTrigger className="w-[120px] h-10 bg-keylio-bg-tertiary border-2 border-keylio-border-primary text-keylio-text-primary rounded-lg">
           <SelectValue placeholder="選擇時間" />
         </SelectTrigger>
         <SelectContent className="bg-keylio-bg-secondary border-keylio-border-primary">

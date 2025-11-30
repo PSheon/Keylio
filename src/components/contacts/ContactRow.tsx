@@ -12,7 +12,6 @@ import {
   Copy,
   MoreHorizontal,
 } from "lucide-react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -23,6 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { staggerItem } from "@/lib/animations";
 import type { Contact } from "@/lib/storage/db";
+import { showSuccess } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 /** ContactRow 變體 */
@@ -71,7 +71,7 @@ function ContactRowComponent({
 
   const handleCopyAddress = () => {
     navigator.clipboard.writeText(contact.address);
-    toast.success("地址已複製");
+    showSuccess("地址已複製");
   };
 
   // Picker 模式：整行可點擊

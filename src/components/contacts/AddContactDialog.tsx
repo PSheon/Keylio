@@ -4,7 +4,6 @@ import { useState, memo } from "react";
 import { ethers } from "ethers";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, CheckCircle } from "lucide-react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,8 +14,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { fadeInUp } from "@/lib/animations";
+import { fadeInUp, stepTransition } from "@/lib/animations";
 import db from "@/lib/storage/db";
+import { showSuccess, showError } from "@/lib/toast";
 
 interface AddContactDialogProps {
   trigger?: React.ReactNode;
@@ -73,11 +73,11 @@ function AddContactDialogComponent({
   const handleSubmit = async () => {
     // Validation
     if (!name.trim()) {
-      toast.error("請輸入聯絡人名稱");
+      showError("請輸入聯絡人名稱");
       return;
     }
     if (!validateAddress(address)) {
-      toast.error("請輸入有效的錢包地址");
+      showError("請輸入有效的錢包地址");
       return;
     }
 
@@ -87,7 +87,7 @@ function AddContactDialogComponent({
       // Check if contact already exists
       const existing = await db.contacts.where('address').equalsIgnoreCase(address).first();
       if (existing) {
-        toast.error("此地址已存在於聯絡簿中");
+        showError("地址重複", "此地址已存在於聯絡簿中");
         setIsSubmitting(false);
         return;
       }
@@ -102,11 +102,11 @@ function AddContactDialogComponent({
       });
 
       setStep('success');
-      toast.success("已新增聯絡人");
+      showSuccess("已新增聯絡人", `${emoji} ${name} 已加入聯絡簿`);
       onSuccess?.();
     } catch (error) {
       console.error('Failed to add contact:', error);
-      toast.error("新增失敗，請重試");
+      showError("新增失敗", "請稍後重試");
     } finally {
       setIsSubmitting(false);
     }
@@ -166,9 +166,10 @@ function AddContactDialogComponent({
           {step === 'input' && (
             <motion.div
               key="input"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
+              variants={stepTransition}
+              initial="initial"
+              animate="animate"
+              exit="exit"
               className="space-y-6"
             >
               {/* Emoji Selector */}
