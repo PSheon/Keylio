@@ -1,7 +1,17 @@
 /**
  * Animation Variants for Framer Motion
  * Keylio Wallet - Consistent animation system
+ *
+ * 使用指南：
+ * - fadeIn/fadeInUp: 一般元素入場
+ * - scaleIn: 彈出框/卡片
+ * - stepTransition: 多步驟表單切換
+ * - staggerContainer + staggerItem: 列表動畫
  */
+
+// ========================================
+// 基礎動畫
+// ========================================
 
 export const fadeIn = {
   initial: { opacity: 0 },
@@ -12,9 +22,12 @@ export const fadeIn = {
 
 export const fadeInUp = {
   initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: 20 },
-  transition: { duration: 0.3, ease: "easeOut" }
+  animate: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.3, ease: [0.4, 0, 0.2, 1] as const }
+  },
+  exit: { opacity: 0, y: 20 }
 };
 
 export const fadeInDown = {
@@ -30,6 +43,21 @@ export const scaleIn = {
   exit: { opacity: 0, scale: 0.95 },
   transition: { duration: 0.2, ease: "easeOut" }
 };
+
+// ========================================
+// 步驟切換動畫（用於多步驟表單/Dialog）
+// ========================================
+
+export const stepTransition = {
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -10 },
+  transition: { duration: 0.3, ease: "easeOut" }
+};
+
+// ========================================
+// 滑入動畫
+// ========================================
 
 export const slideInRight = {
   initial: { opacity: 0, x: 50 },
