@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useMemo, useCallback } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
+import { useRouterContext } from "@/components/providers/RouterProvider";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { DashboardLayout } from "@/components/wallet/DashboardLayout";
 import { LoadingScreen } from "@/components/wallet/LoadingScreen";
@@ -9,7 +10,9 @@ import { PhilosophyScreen } from "@/components/wallet/PhilosophyScreen";
 import { PortfolioHome } from "@/components/wallet/PortfolioHome";
 import { UnlockScreen } from "@/components/wallet/UnlockScreen";
 import { WalletSetupWizard } from "@/components/wallet/WalletSetupWizard";
+import { useBeforeUnload } from "@/hooks/useBeforeUnload";
 import db from "@/lib/storage/db";
+import { useRedirectStore } from "@/stores/useRedirectStore";
 import { useWalletStore } from "@/stores/useWalletStore";
 
 // Flow per Spec Phase 1:
@@ -30,6 +33,9 @@ export function HomeContent() {
 
   const setWallets = useWalletStore((state) => state.setWallets);
   const isUnlocked = useWalletStore((state) => state.isUnlocked);
+
+  // 當用戶已解鎖錢包時，防止意外重整頁面
+  useBeforeUnload({ enabled: isUnlocked });
 
   // Check if wallet exists
   const subWallets = useLiveQuery(() => db.sub_wallets.toArray());
@@ -56,10 +62,26 @@ export function HomeContent() {
   // Use computed view if not yet initialized, otherwise use override from store
   const currentView = viewOverride ?? (subWallets === undefined ? 'loading' : computedInitialView ?? 'loading');
 
+  // Get redirect store actions
+  const consumeRedirectUrl = useRedirectStore((state) => state.consumeRedirectUrl);
+  const { navigateTo } = useRouterContext();
+
   // View transition handler
   const setView = useCallback((newView: AppView) => {
     setViewOverride(newView);
   }, [setViewOverride]);
+
+  // Handler for successful unlock - check for redirect URL
+  const handleUnlockSuccess = useCallback(() => {
+    const redirectUrl = consumeRedirectUrl();
+    if (redirectUrl && redirectUrl !== '/') {
+      // Navigate to the saved URL
+      navigateTo(redirectUrl);
+    } else {
+      // Default: show dashboard
+      setView('dashboard');
+    }
+  }, [consumeRedirectUrl, navigateTo, setView]);
 
   // Simple view rendering per Spec Phase 1 flow
   switch (currentView) {
@@ -72,7 +94,7 @@ export function HomeContent() {
       // Step 2-4 (Spec): Intro + Password setup + PassKey setup (now combined in wizard)
       return <WalletSetupWizard onComplete={() => setView('dashboard')} />;
     case 'unlock':
-      return <UnlockScreen onUnlock={() => setView('dashboard')} />;
+      return <UnlockScreen onUnlock={handleUnlockSuccess} />;
     case 'dashboard':
       return (
         <DashboardLayout>
