@@ -84,8 +84,11 @@ function AddContactDialogComponent({
     setIsSubmitting(true);
 
     try {
-      // Check if contact already exists
-      const existing = await db.contacts.where('address').equalsIgnoreCase(address).first();
+      // Normalize address to checksum format for consistent comparison
+      const checksumAddress = ethers.getAddress(address);
+
+      // Check if contact already exists (using normalized address)
+      const existing = await db.contacts.where('address').equals(checksumAddress).first();
       if (existing) {
         showError("地址重複", "此地址已存在於聯絡簿中");
         setIsSubmitting(false);
@@ -95,7 +98,7 @@ function AddContactDialogComponent({
       // Add to IndexedDB
       await db.contacts.add({
         name: name.trim(),
-        address: ethers.getAddress(address), // Checksum address
+        address: checksumAddress,
         emoji,
         notes: notes.trim() || undefined,
         createdAt: Date.now(),

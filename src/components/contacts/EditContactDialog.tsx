@@ -102,11 +102,14 @@ function EditContactDialogComponent({
     setIsSubmitting(true);
 
     try {
+      // Normalize the new address
+      const normalizedNewAddress = ethers.getAddress(address.trim());
+
       // 檢查新地址是否與其他聯絡人重複
-      if (address.toLowerCase() !== contact.address.toLowerCase()) {
+      if (normalizedNewAddress.toLowerCase() !== contact.address.toLowerCase()) {
         const existing = await db.contacts
           .where('address')
-          .equalsIgnoreCase(address.trim())
+          .equals(normalizedNewAddress)
           .first();
 
         if (existing && existing.id !== contact.id) {
@@ -119,7 +122,7 @@ function EditContactDialogComponent({
       // 更新聯絡人
       await db.contacts.update(contact.id, {
         name: name.trim(),
-        address: ethers.getAddress(address.trim()), // 正規化地址
+        address: normalizedNewAddress,
         emoji,
       });
 
