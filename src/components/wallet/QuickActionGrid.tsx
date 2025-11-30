@@ -35,6 +35,12 @@ const ACTION_STYLES = {
     iconColor: "text-blue-400",
     labelColor: "text-blue-400",
   },
+  swap: {
+    container: "bg-purple-500/10 hover:bg-purple-500/20 border-purple-500/30",
+    icon: "bg-purple-500/20",
+    iconColor: "text-purple-400",
+    labelColor: "text-purple-400",
+  },
   secondary: {
     container: "bg-keylio-bg-secondary hover:bg-keylio-bg-tertiary border-keylio-border-primary",
     icon: "",
@@ -103,9 +109,7 @@ function QuickActionGridComponent({ walletAddress, hasBalance }: QuickActionGrid
             <ActionButton
               icon={<ArrowRightLeft className="w-5 h-5 sm:w-6 sm:h-6" />}
               label="兌換"
-              variant="secondary"
-              iconBg="bg-purple-500/10"
-              iconColor="text-purple-400"
+              variant="swap"
             />
           }
         />

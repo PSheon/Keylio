@@ -92,7 +92,7 @@ export const WalletSetupWizard = memo(function WalletSetupWizard({ onComplete }:
     const success = await passkeyManager.updatePasskeyName(id, passkeyEditor.editingName, existingNames);
     if (success) {
       setPasskeys(prev => prev.map(p => p.id === id ? { ...p, name: passkeyEditor.editingName.trim() } : p));
-      passkeyEditor.resetEditing();
+      passkeyEditor.cancelEditing();
     }
   }, [passkeys, passkeyManager, passkeyEditor]);
 

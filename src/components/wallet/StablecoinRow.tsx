@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Copy, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { TokenIcon } from "@/components/ui/token-icon";
 import { staggerItem } from "@/lib/animations";
 import { ACTIVE_CHAIN } from "@/lib/chain";
 import { formatUSD, formatTokenBalance } from "@/lib/formatters";
@@ -18,7 +19,6 @@ export type StablecoinRowVariant = "default" | "compact" | "detailed";
 export interface StablecoinData {
   symbol: string;
   name: string;
-  icon: string;
   balance: string;
   valueUSD: number;
   /** 佔總穩定幣的百分比 (0-100) */
@@ -79,7 +79,7 @@ function StablecoinRowComponent({
           onClick && "cursor-pointer hover:bg-keylio-bg-tertiary"
         )}
       >
-        <span className="text-lg">{coin.icon}</span>
+        <TokenIcon symbol={coin.symbol} size="20px" />
         <div className="flex-1 min-w-0">
           <span className="text-sm font-medium text-keylio-text-primary">
             {coin.symbol}
@@ -107,8 +107,8 @@ function StablecoinRowComponent({
       >
         {/* Left: Icon & Info */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-keylio-bg-tertiary flex items-center justify-center text-xl">
-            {coin.icon}
+          <div className="w-10 h-10 rounded-full bg-keylio-bg-tertiary flex items-center justify-center">
+            <TokenIcon symbol={coin.symbol} size="32px" />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -190,8 +190,8 @@ function StablecoinRowComponent({
     >
       {/* Left: Icon & Name */}
       <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-full bg-keylio-bg-tertiary flex items-center justify-center text-lg">
-          {coin.icon}
+        <div className="w-9 h-9 rounded-full bg-keylio-bg-tertiary flex items-center justify-center">
+          <TokenIcon symbol={coin.symbol} size="24px" />
         </div>
         <div>
           <div className="font-medium text-keylio-text-primary text-sm">

@@ -15,9 +15,10 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { WalletAvatar, EmojiPicker, ColorPicker } from "@/components/wallet/shared";
+import { DEFAULT_WALLET_EMOJI, DEFAULT_WALLET_COLOR } from "@/constants";
 import db from "@/lib/storage/db";
 import { showSuccess, showError } from "@/lib/toast";
-import { cn } from "@/lib/utils";
 import { useWalletStore } from "@/stores/useWalletStore";
 
 // ============================================================================
@@ -28,9 +29,6 @@ interface CreateWalletDialogProps {
   trigger?: React.ReactNode;
   onSuccess?: () => void;
 }
-
-const EMOJI_OPTIONS = ["💼", "💰", "🏦", "🏠", "🚗", "✈️", "🎮", "🛒", "🎯", "💎"];
-const COLOR_OPTIONS = ["#14b8a6", "#3b82f6", "#8b5cf6", "#f43f5e", "#f59e0b", "#10b981", "#ec4899", "#06b6d4"];
 
 // ============================================================================
 // Helper Components
@@ -51,70 +49,6 @@ function SecurityTip() {
   );
 }
 
-/** Emoji picker grid */
-function EmojiPicker({
-  value,
-  onChange
-}: {
-  value: string;
-  onChange: (emoji: string) => void;
-}) {
-  return (
-    <div className="space-y-2">
-      <Label>選擇圖示</Label>
-      <div className="flex gap-2 flex-wrap">
-        {EMOJI_OPTIONS.map((e) => (
-          <button
-            key={e}
-            type="button"
-            onClick={() => onChange(e)}
-            className={cn(
-              "w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-all",
-              value === e
-                ? "bg-keylio-teal/20 ring-2 ring-keylio-teal"
-                : "bg-keylio-bg-tertiary hover:bg-keylio-bg-tertiary/80"
-            )}
-          >
-            {e}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/** Color picker grid */
-function ColorPicker({
-  value,
-  onChange
-}: {
-  value: string;
-  onChange: (color: string) => void;
-}) {
-  return (
-    <div className="space-y-2">
-      <Label>選擇顏色</Label>
-      <div className="flex gap-2 flex-wrap">
-        {COLOR_OPTIONS.map((c) => (
-          <button
-            key={c}
-            type="button"
-            onClick={() => onChange(c)}
-            className={cn(
-              "w-8 h-8 rounded-full transition-all",
-              value === c && "ring-2 ring-offset-2 ring-offset-keylio-bg-secondary"
-            )}
-            style={{
-              backgroundColor: c,
-              ...(value === c && { '--tw-ring-color': c } as React.CSSProperties)
-            }}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ============================================================================
 // Main Component
 // ============================================================================
@@ -122,16 +56,16 @@ function ColorPicker({
 export function CreateWalletDialog({ trigger, onSuccess }: CreateWalletDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
-  const [emoji, setEmoji] = useState(EMOJI_OPTIONS[0]);
-  const [color, setColor] = useState(COLOR_OPTIONS[0]);
+  const [emoji, setEmoji] = useState<string>(DEFAULT_WALLET_EMOJI);
+  const [color, setColor] = useState<string>(DEFAULT_WALLET_COLOR);
   const [isProcessing, setIsProcessing] = useState(false);
 
   const addWallet = useWalletStore((state) => state.addWallet);
 
   const resetForm = useCallback(() => {
     setName("");
-    setEmoji(EMOJI_OPTIONS[0]);
-    setColor(COLOR_OPTIONS[0]);
+    setEmoji(DEFAULT_WALLET_EMOJI);
+    setColor(DEFAULT_WALLET_COLOR);
   }, []);
 
   const handleCreate = useCallback(async () => {
@@ -197,15 +131,7 @@ export function CreateWalletDialog({ trigger, onSuccess }: CreateWalletDialogPro
         <DialogBody>
           {/* Preview */}
           <div className="flex justify-center py-2">
-            <div
-              className="w-16 h-16 rounded-full flex items-center justify-center text-3xl border-2"
-              style={{
-                backgroundColor: `${color}20`,
-                borderColor: color
-              }}
-            >
-              {emoji}
-            </div>
+            <WalletAvatar emoji={emoji} color={color} size="lg" />
           </div>
 
           {/* Name Input */}
@@ -223,10 +149,16 @@ export function CreateWalletDialog({ trigger, onSuccess }: CreateWalletDialogPro
           </div>
 
           {/* Emoji Picker */}
-          <EmojiPicker value={emoji} onChange={setEmoji} />
+          <div className="space-y-2">
+            <Label>選擇圖示</Label>
+            <EmojiPicker value={emoji} onChange={setEmoji} />
+          </div>
 
           {/* Color Picker */}
-          <ColorPicker value={color} onChange={setColor} />
+          <div className="space-y-2">
+            <Label>選擇顏色</Label>
+            <ColorPicker value={color} onChange={setColor} />
+          </div>
 
           {/* Security Tip */}
           <SecurityTip />

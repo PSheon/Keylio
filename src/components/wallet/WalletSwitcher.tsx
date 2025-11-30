@@ -23,6 +23,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { WalletAvatar, EmojiPicker, ColorPicker } from "@/components/wallet/shared";
+import {
+  DEFAULT_WALLET_EMOJI,
+  DEFAULT_WALLET_COLOR,
+} from "@/constants";
 import { deriveAddressFromXpub } from "@/lib/crypto";
 import db from "@/lib/storage/db";
 import type { SubWallet } from "@/lib/storage/db";
@@ -31,44 +36,8 @@ import { cn } from "@/lib/utils";
 import { useWalletStore } from "@/stores/useWalletStore";
 
 // ============================================================================
-// Constants
-// ============================================================================
-
-const EMOJI_OPTIONS = ["💼", "💰", "🏦", "🏠", "🚗", "✈️", "🎮", "🛒", "🎯", "💎"];
-const COLOR_OPTIONS = ["#14b8a6", "#3b82f6", "#8b5cf6", "#f43f5e", "#f59e0b", "#10b981", "#ec4899", "#06b6d4"];
-
-// ============================================================================
 // Helper Components
 // ============================================================================
-
-interface WalletAvatarProps {
-  emoji: string;
-  color: string;
-  size?: "sm" | "md" | "lg";
-}
-
-function WalletAvatar({ emoji, color, size = "md" }: WalletAvatarProps) {
-  const sizeClasses = {
-    sm: "w-7 h-7 text-sm",
-    md: "w-10 h-10 text-lg",
-    lg: "w-20 h-20 text-4xl border-2",
-  };
-
-  return (
-    <div
-      className={cn(
-        "rounded-full flex items-center justify-center shrink-0",
-        sizeClasses[size]
-      )}
-      style={{
-        backgroundColor: `${color}20`,
-        ...(size === "lg" && { borderColor: color })
-      }}
-    >
-      {emoji}
-    </div>
-  );
-}
 
 interface WalletListItemProps {
   wallet: SubWallet;
@@ -152,8 +121,8 @@ export function WalletSwitcher() {
   const [isListOpen, setIsListOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newWalletName, setNewWalletName] = useState("");
-  const [selectedEmoji, setSelectedEmoji] = useState(EMOJI_OPTIONS[0]);
-  const [selectedColor, setSelectedColor] = useState(COLOR_OPTIONS[0]);
+  const [selectedEmoji, setSelectedEmoji] = useState<string>(DEFAULT_WALLET_EMOJI);
+  const [selectedColor, setSelectedColor] = useState<string>(DEFAULT_WALLET_COLOR);
   const [isCreating, setIsCreating] = useState(false);
   const [copiedId, setCopiedId] = useState<number | null>(null);
 
@@ -223,8 +192,8 @@ export function WalletSwitcher() {
       showSuccess("子錢包創建成功", newWalletName.trim());
       setIsCreateOpen(false);
       setNewWalletName("");
-      setSelectedEmoji(EMOJI_OPTIONS[0]);
-      setSelectedColor(COLOR_OPTIONS[0]);
+      setSelectedEmoji(DEFAULT_WALLET_EMOJI);
+      setSelectedColor(DEFAULT_WALLET_COLOR);
     } catch (error) {
       console.error("Create wallet error:", error);
       showError("創建失敗");
@@ -341,43 +310,13 @@ export function WalletSwitcher() {
             {/* Emoji Picker */}
             <div className="space-y-2">
               <Label>圖示</Label>
-              <div className="flex flex-wrap gap-2">
-                {EMOJI_OPTIONS.map((emoji) => (
-                  <button
-                    key={emoji}
-                    onClick={() => setSelectedEmoji(emoji)}
-                    className={cn(
-                      "w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-all",
-                      selectedEmoji === emoji
-                        ? "bg-keylio-teal/20 ring-2 ring-keylio-teal"
-                        : "bg-keylio-bg-tertiary hover:bg-keylio-bg-tertiary/80"
-                    )}
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
+              <EmojiPicker value={selectedEmoji} onChange={setSelectedEmoji} />
             </div>
 
             {/* Color Picker */}
             <div className="space-y-2">
               <Label>顏色</Label>
-              <div className="flex flex-wrap gap-2">
-                {COLOR_OPTIONS.map((color) => (
-                  <button
-                    key={color}
-                    onClick={() => setSelectedColor(color)}
-                    className={cn(
-                      "w-8 h-8 rounded-full transition-all",
-                      selectedColor === color && "ring-2 ring-offset-2 ring-offset-keylio-bg-secondary"
-                    )}
-                    style={{
-                      backgroundColor: color,
-                      ...(selectedColor === color && { '--tw-ring-color': color } as React.CSSProperties)
-                    }}
-                  />
-                ))}
-              </div>
+              <ColorPicker value={selectedColor} onChange={setSelectedColor} />
             </div>
           </DialogBody>
 

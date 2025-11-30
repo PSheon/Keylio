@@ -5,27 +5,26 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useShallow } from "zustand/react/shallow";
 import { PageTransition, PageSection } from "@/components/ui/page-transition";
 import { useMultiTokenBalance } from "@/hooks/useTokenBalance";
+import { useTransactionSync } from "@/hooks/useTransactionSync";
 import db from "@/lib/storage/db";
 import { showSuccess, showError } from "@/lib/toast";
 import { getAllTokens, formatTokenAmount, getTokenValueUSD } from "@/lib/tokens";
 import { useWalletStore } from "@/stores/useWalletStore";
-import { AssetChart } from "./AssetChart";
-import { PortfolioBalance } from "./PortfolioBalance";
+import { AssetCard } from "./AssetCard";
 import { PortfolioHeader } from "./PortfolioHeader";
+import { PortfolioOverview } from "./PortfolioOverview";
 import { QuickActionGrid } from "./QuickActionGrid";
 import { RecentActivityList } from "./RecentActivityList";
-import { StablecoinAssetCard } from "./StablecoinAssetCard";
 
 /**
  * Portfolio Home Page
  *
  * 頁面結構（優化後）：
  * 1. Header - 錢包切換
- * 2. 全局總資產 KPI - 點擊展開完整資產 Dialog
- * 3. 資產變化圖表 - 30 天趨勢
- * 4. 快速操作 - 收款/發送/兌換
- * 5. 穩定幣資產卡片 - Tab 切換（按幣種/按用途）
- * 6. 近期活動 - 最近 5 筆交易
+ * 2. Portfolio Overview - 總資產 + 趨勢圖表（整合）
+ * 3. 快速操作 - 收款/發送/兌換
+ * 4. 資產卡片 - Tab 切換（按幣種/按用途）
+ * 5. 近期活動 - 最近 5 筆交易
  */
 function PortfolioHomeComponent() {
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -44,6 +43,9 @@ function PortfolioHomeComponent() {
     [wallets, activeWalletId]
   );
   const walletAddress = activeWallet?.address || "";
+
+  // Transaction sync hook - auto polls for new transactions
+  const { sync: syncTransactions } = useTransactionSync();
 
   // Get all tokens
   const allTokens = useMemo(() => getAllTokens(), []);
@@ -93,18 +95,22 @@ function PortfolioHomeComponent() {
     };
   }, [balances, allTokens]);
 
-  // Refresh handler
+  // Refresh handler - syncs both balances and transactions
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      await refetch();
+      // Parallel refresh: balance + transaction history
+      await Promise.all([
+        refetch(),
+        syncTransactions(),
+      ]);
       showSuccess("已更新");
     } catch {
       showError("更新失敗");
     } finally {
       setIsRefreshing(false);
     }
-  }, [refetch]);
+  }, [refetch, syncTransactions]);
 
   return (
     <PageTransition>
@@ -113,34 +119,27 @@ function PortfolioHomeComponent() {
         <PortfolioHeader isRefreshing={isRefreshing} onRefresh={handleRefresh} />
       </PageSection>
 
-      {/* ===== Overview 區塊 ===== */}
-      {/* 總資產 KPI + 資產變化圖表視覺上形成一個區塊 */}
-      <PageSection className="space-y-4">
-        {/* 2. 全局總資產 KPI (View-only) */}
-        <PortfolioBalance
+      {/* 2. Portfolio Overview - 整合總資產 + 趨勢圖表 */}
+      <PageSection>
+        <PortfolioOverview
           totalValueUSD={totalValueUSD}
+          subWalletId={activeWallet?.id}
           isLoading={isLoading}
           hasError={!!error}
         />
-
-        {/* 3. 資產變化圖表 */}
-        <AssetChart totalValue={totalValueUSD} />
       </PageSection>
 
-      {/* ===== 操作區塊 ===== */}
-      {/* 與 Overview 區塊之間有視覺分隔（space-y-6 已提供） */}
-
-      {/* 4. 快速操作 */}
+      {/* 3. 快速操作 */}
       <PageSection>
         <QuickActionGrid walletAddress={walletAddress} hasBalance={hasBalance} />
       </PageSection>
 
-      {/* 5. 穩定幣資產卡片 - Tab 切換（按幣種/按用途）+ 完整資產入口 */}
+      {/* 4. 資產卡片 - Tab 切換（按幣種/按用途）+ 完整資產入口 */}
       <PageSection>
-        <StablecoinAssetCard />
+        <AssetCard />
       </PageSection>
 
-      {/* 6. 近期活動 */}
+      {/* 5. 近期活動 */}
       <PageSection>
         <RecentActivityList
           transactions={recentTransactions}

@@ -26,16 +26,18 @@ import {
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TokenIcon } from "@/components/ui/token-icon";
 import { useMultiTokenBalance } from "@/hooks/useTokenBalance";
 import { staggerItem, staggerContainer } from "@/lib/animations";
 import { ACTIVE_CHAIN } from "@/lib/chain";
 import { formatUSD, formatCurrency, formatTokenBalance, formatPercent } from "@/lib/formatters";
 import { showSuccess, showError } from "@/lib/toast";
-import { getAllTokens, formatTokenAmount, getTokenValueUSD } from "@/lib/tokens";
+import { getAllTokens, formatTokenAmount, getTokenValueUSD, TOKENS } from "@/lib/tokens";
 import { cn } from "@/lib/utils";
 import { useSettingsStore } from "@/stores/useSettingsStore";
 import { useWalletStore } from "@/stores/useWalletStore";
 import { StablecoinRow, type StablecoinData } from "./StablecoinRow";
+import { TokenDetailDialog, type TokenDetailData } from "./TokenDetailDialog";
 
 interface AssetDetailDialogProps {
   /** 觸發器元素 */
@@ -55,6 +57,10 @@ function AssetDetailDialogComponent({ trigger }: AssetDetailDialogProps) {
   const [showOtherAssets, setShowOtherAssets] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>('value-desc');
+
+  // TokenDetailDialog 狀態
+  const [selectedToken, setSelectedToken] = useState<TokenDetailData | null>(null);
+  const [tokenDetailOpen, setTokenDetailOpen] = useState(false);
 
   const wallets = useWalletStore((state) => state.wallets);
   const activeWalletId = useWalletStore((state) => state.activeWalletId);
@@ -97,7 +103,6 @@ function AssetDetailDialogComponent({ trigger }: AssetDetailDialogProps) {
         stablecoinData.push({
           symbol: token.symbol,
           name: token.name,
-          icon: token.icon,
           balance: formattedBalance,
           valueUSD,
           contractAddress: token.address,
@@ -136,7 +141,6 @@ function AssetDetailDialogComponent({ trigger }: AssetDetailDialogProps) {
           name: token.name,
           balance: formattedBalance,
           valueUSD,
-          icon: token.icon,
           change24h: mockChanges[token.symbol] || 0,
           contractAddress: token.address,
         };
@@ -146,7 +150,6 @@ function AssetDetailDialogComponent({ trigger }: AssetDetailDialogProps) {
         name: string;
         balance: string;
         valueUSD: number;
-        icon: string;
         change24h: number;
         contractAddress: string;
       }>;
@@ -193,7 +196,31 @@ function AssetDetailDialogComponent({ trigger }: AssetDetailDialogProps) {
     }
   }, [refetch]);
 
+  // 打開代幣詳情
+  const handleOpenTokenDetail = useCallback((tokenData: {
+    symbol: string;
+    name: string;
+    balance: string;
+    valueUSD: number;
+    contractAddress: string;
+    change24h?: number;
+  }) => {
+    const tokenConfig = TOKENS[tokenData.symbol.toUpperCase()];
+    setSelectedToken({
+      symbol: tokenData.symbol,
+      name: tokenData.name,
+      balance: tokenData.balance,
+      valueUSD: tokenData.valueUSD,
+      contractAddress: tokenData.contractAddress,
+      decimals: tokenConfig?.decimals ?? 18,
+      isNative: tokenConfig?.isNative ?? false,
+      change24h: tokenData.change24h,
+    });
+    setTokenDetailOpen(true);
+  }, []);
+
   return (
+    <>
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger}
@@ -306,6 +333,14 @@ function AssetDetailDialogComponent({ trigger }: AssetDetailDialogProps) {
                         coin={coin}
                         variant="detailed"
                         hideBalance={hideBalances}
+                        onClick={() => handleOpenTokenDetail({
+                          symbol: coin.symbol,
+                          name: coin.name,
+                          balance: coin.balance,
+                          valueUSD: coin.valueUSD,
+                          contractAddress: coin.contractAddress || "",
+                          change24h: 0, // 穩定幣變化基本為 0
+                        })}
                       />
                     ))}
                   </motion.div>
@@ -365,6 +400,7 @@ function AssetDetailDialogComponent({ trigger }: AssetDetailDialogProps) {
                             key={token.symbol}
                             token={token}
                             hideBalance={hideBalances}
+                            onClick={() => handleOpenTokenDetail(token)}
                           />
                         ))
                       )}
@@ -376,6 +412,27 @@ function AssetDetailDialogComponent({ trigger }: AssetDetailDialogProps) {
         </DialogBody>
       </DialogContent>
     </Dialog>
+
+    {/* 單一代幣詳情 Dialog */}
+    <TokenDetailDialog
+      token={selectedToken}
+      open={tokenDetailOpen}
+      onOpenChange={setTokenDetailOpen}
+      hideBalance={hideBalances}
+      onSend={() => {
+        setTokenDetailOpen(false);
+        // TODO: 打開發送 Dialog
+      }}
+      onReceive={() => {
+        setTokenDetailOpen(false);
+        // TODO: 打開接收 Dialog
+      }}
+      onSwap={() => {
+        setTokenDetailOpen(false);
+        // TODO: 打開兌換 Dialog
+      }}
+    />
+    </>
   );
 }
 
@@ -386,24 +443,26 @@ interface OtherAssetItemProps {
     name: string;
     balance: string;
     valueUSD: number;
-    icon: string;
     change24h: number;
+    contractAddress: string;
   };
   hideBalance?: boolean;
+  onClick?: () => void;
 }
 
-function OtherAssetItem({ token, hideBalance }: OtherAssetItemProps) {
+function OtherAssetItem({ token, hideBalance, onClick }: OtherAssetItemProps) {
   const hasChange = token.change24h !== 0;
   const isPositive = token.change24h > 0;
   const isNegative = token.change24h < 0;
 
   return (
-    <motion.div
+    <motion.button
       variants={staggerItem}
-      className="flex items-center justify-between p-3 bg-keylio-bg-tertiary/50 rounded-xl"
+      onClick={onClick}
+      className="w-full flex items-center justify-between p-3 bg-keylio-bg-tertiary/50 rounded-xl hover:bg-keylio-bg-tertiary transition-colors cursor-pointer text-left"
     >
       <div className="flex items-center gap-3">
-        <span className="text-2xl">{token.icon}</span>
+        <TokenIcon symbol={token.symbol} size="32px" />
         <div>
           <div className="font-medium text-keylio-text-primary flex items-center gap-2">
             {token.symbol}
@@ -433,7 +492,7 @@ function OtherAssetItem({ token, hideBalance }: OtherAssetItemProps) {
       <div className="text-right font-medium text-keylio-text-primary">
         {hideBalance ? "••••" : formatCurrency(token.valueUSD)}
       </div>
-    </motion.div>
+    </motion.button>
   );
 }
 
