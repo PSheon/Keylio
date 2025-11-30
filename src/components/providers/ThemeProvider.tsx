@@ -1,23 +1,25 @@
 "use client";
 
 import { useEffect } from "react";
+import { applyTheme, setThemeCookie } from "@/lib/theme";
 import { useSettingsStore } from "@/stores/useSettingsStore";
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const theme = useSettingsStore((state) => state.theme);
 
   useEffect(() => {
-    const root = document.documentElement;
+    // Apply theme to document
+    applyTheme(theme);
 
-    // Remove existing theme classes
-    root.classList.remove('light', 'dark');
+    // Save to cookie for SSR
+    setThemeCookie(theme);
 
-    // Apply new theme
-    if (theme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-      root.classList.add(systemTheme);
-    } else {
-      root.classList.add(theme);
+    // Listen for system theme changes when theme is 'system'
+    if (theme === "system") {
+      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+      const handleChange = () => applyTheme("system");
+      mediaQuery.addEventListener("change", handleChange);
+      return () => mediaQuery.removeEventListener("change", handleChange);
     }
   }, [theme]);
 
