@@ -31,6 +31,7 @@ interface PageTransitionProps extends Omit<HTMLMotionProps<"div">, "variants" | 
 function PageTransitionComponent({ children, className, ...props }: PageTransitionProps) {
   return (
     <motion.div
+      data-slot="page-transition"
       variants={staggerContainer}
       initial="initial"
       animate="animate"
@@ -62,6 +63,7 @@ interface PageSectionProps extends Omit<HTMLMotionProps<"div">, "variants"> {
 function PageSectionComponent({ children, className, ...props }: PageSectionProps) {
   return (
     <motion.div
+      data-slot="page-section"
       variants={fadeInUp}
       className={className}
       {...props}
@@ -83,7 +85,7 @@ interface PageHeaderProps {
 
 function PageHeaderComponent({ title, description, action }: PageHeaderProps) {
   return (
-    <motion.div variants={fadeInUp} className="flex items-start justify-between">
+    <motion.div data-slot="page-header" variants={fadeInUp} className="flex items-start justify-between">
       <div>
         <h1 className="text-2xl font-bold text-keylio-text-primary">{title}</h1>
         {description ? <p className="text-sm text-keylio-text-muted mt-1">{description}</p> : null}
