@@ -21,6 +21,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { PageTransition, PageSection } from "@/components/ui/page-transition";
 import { DashboardLayout } from "@/components/wallet/DashboardLayout";
+import { useBeforeUnload } from "@/hooks/useBeforeUnload";
 import { fadeInUp } from "@/lib/animations";
 import db, { type Contact } from "@/lib/storage/db";
 import { showSuccess, showError, showInfo } from "@/lib/toast";
@@ -34,6 +35,9 @@ import { showSuccess, showError, showInfo } from "@/lib/toast";
  * - 下方：空狀態 CTA（掃描 QR / 匯入通訊錄）
  */
 function ContactsContentComponent() {
+  // 防止意外重整頁面
+  useBeforeUnload();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [showScanner, setShowScanner] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);

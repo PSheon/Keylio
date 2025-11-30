@@ -27,6 +27,7 @@ import { ThemeSettings } from "@/components/settings/ThemeSettings";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageTransition, PageSection, PageHeader } from "@/components/ui/page-transition";
 import { DashboardLayout } from "@/components/wallet/DashboardLayout";
+import { useBeforeUnload } from "@/hooks/useBeforeUnload";
 import db, { type PasskeyMetadata } from "@/lib/storage/db";
 import { showInfo } from "@/lib/toast";
 import { useWalletStore } from "@/stores/useWalletStore";
@@ -35,6 +36,9 @@ import { useWalletStore } from "@/stores/useWalletStore";
  * 設定頁面內容 - Client Component
  */
 export function SettingsContent() {
+  // 防止意外重整頁面
+  useBeforeUnload();
+
   const [passkeyDialogOpen, setPasskeyDialogOpen] = useState(false);
   const [backupDialogOpen, setBackupDialogOpen] = useState(false);
   const { navigateTo } = useRouterContext();
