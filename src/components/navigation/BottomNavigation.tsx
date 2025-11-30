@@ -1,9 +1,10 @@
 "use client";
 
 import { memo } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { Home, Users, Settings } from "lucide-react";
+import { useRouterContext } from "@/components/providers/RouterProvider";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
@@ -30,12 +31,8 @@ const navItems: NavItem[] = [
  * [🏠 首頁] [👥 聯絡簿] [⚙️ 設定]
  */
 export function BottomNavigation() {
-  const router = useRouter();
+  const { navigateTo } = useRouterContext();
   const pathname = usePathname();
-
-  const handleNavigation = (path: string) => {
-    router.push(path);
-  };
 
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-keylio-border-primary bg-keylio-bg-secondary/95 backdrop-blur-xl safe-area-inset-bottom">
@@ -48,7 +45,7 @@ export function BottomNavigation() {
           return (
             <button
               key={item.path}
-              onClick={() => handleNavigation(item.path)}
+              onClick={() => navigateTo(item.path)}
               className={cn(
                 "flex flex-col items-center justify-center gap-1 w-full h-full",
                 "transition-colors duration-200 touch-manipulation",

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
+import { useRouterContext } from "@/components/providers/RouterProvider";
 import { LoadingScreen } from "@/components/wallet/LoadingScreen";
 import db from "@/lib/storage/db";
 import { useWalletStore } from "@/stores/useWalletStore";
@@ -21,7 +21,7 @@ interface AuthGuardProps {
  * 如果未解鎖或沒有錢包，自動導向首頁（首頁會處理解鎖流程）
  */
 export function AuthGuard({ children }: AuthGuardProps) {
-  const router = useRouter();
+  const { navigateTo } = useRouterContext();
   const isUnlocked = useWalletStore((state) => state.isUnlocked);
 
   // Check if wallet exists
@@ -51,9 +51,9 @@ export function AuthGuard({ children }: AuthGuardProps) {
   // Redirect to home if not authenticated
   useEffect(() => {
     if (authState === "no-wallet" || authState === "locked") {
-      router.replace("/");
+      navigateTo("/", { replace: true });
     }
-  }, [authState, router]);
+  }, [authState, navigateTo]);
 
   // Show loading while checking auth
   if (authState === "loading") {

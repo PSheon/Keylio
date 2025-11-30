@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useLiveQuery } from "dexie-react-hooks";
 import {
   Shield,
@@ -15,6 +14,7 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { AuthGuard } from "@/components/auth/AuthGuard";
+import { useRouterContext } from "@/components/providers/RouterProvider";
 import { AutoLockSettings } from "@/components/settings/AutoLockSettings";
 import { BackupMnemonicDialog } from "@/components/settings/BackupMnemonicDialog";
 import { CurrencySettings } from "@/components/settings/CurrencySettings";
@@ -34,7 +34,7 @@ import { useWalletStore } from "@/stores/useWalletStore";
 export default function SettingsPage() {
   const [passkeyDialogOpen, setPasskeyDialogOpen] = useState(false);
   const [backupDialogOpen, setBackupDialogOpen] = useState(false);
-  const router = useRouter();
+  const { navigateTo } = useRouterContext();
   const setUnlocked = useWalletStore((state) => state.setUnlocked);
   const destroySession = useWalletStore((state) => state.destroySession);
 
@@ -48,7 +48,7 @@ export default function SettingsPage() {
   const handleLogout = () => {
     destroySession();
     setUnlocked(false);
-    router.push("/");
+    navigateTo("/");
   };
 
   return (

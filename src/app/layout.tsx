@@ -4,6 +4,7 @@ import { type Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "sonner";
 import { QueryProvider } from "@/components/providers/QueryProvider";
+import { RouterProvider } from "@/components/providers/RouterProvider";
 import { SessionInitializer } from "@/components/providers/SessionInitializer";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
@@ -49,11 +50,13 @@ export default async function RootLayout({
       >
         <QueryProvider>
           <ThemeProvider>
-            <SessionProvider>
-              <SessionInitializer />
-              {children}
-              <Toaster richColors position="top-center" />
-            </SessionProvider>
+            <RouterProvider>
+              <SessionProvider>
+                <SessionInitializer />
+                {children}
+                <Toaster richColors position="top-center" />
+              </SessionProvider>
+            </RouterProvider>
           </ThemeProvider>
         </QueryProvider>
       </body>
