@@ -2,9 +2,65 @@
 
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
+import { cva, type VariantProps } from "class-variance-authority"
 import { XIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+
+// ============================================================================
+// Dialog Design Tokens
+// ============================================================================
+const DIALOG_TOKENS = {
+  overlay: {
+    base: "bg-black/60 backdrop-blur-sm",
+  },
+  content: {
+    bg: "bg-keylio-bg-secondary",
+    border: "border-keylio-border",
+    text: "text-keylio-text-primary",
+  },
+  close: {
+    bg: "bg-keylio-bg-tertiary hover:bg-keylio-bg-tertiary/80",
+    text: "text-keylio-text-secondary hover:text-keylio-text-primary",
+  },
+} as const
+
+// ============================================================================
+// Size Variants for DialogContent
+// ============================================================================
+const dialogContentVariants = cva(
+  // Base styles
+  [
+    "fixed top-[50%] left-[50%] z-50 grid w-full translate-x-[-50%] translate-y-[-50%]",
+    "rounded-xl border shadow-2xl duration-200",
+    "data-[state=open]:animate-in data-[state=closed]:animate-out",
+    "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+    "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+    DIALOG_TOKENS.content.bg,
+    DIALOG_TOKENS.content.border,
+    DIALOG_TOKENS.content.text,
+  ],
+  {
+    variants: {
+      size: {
+        sm: "max-w-[calc(100%-2rem)] sm:max-w-sm p-4 gap-3",
+        md: "max-w-[calc(100%-2rem)] sm:max-w-md p-5 gap-4",
+        lg: "max-w-[calc(100%-2rem)] sm:max-w-lg p-6 gap-4",
+        xl: "max-w-[calc(100%-2rem)] sm:max-w-xl p-6 gap-5",
+        full: "max-w-[calc(100%-1rem)] sm:max-w-2xl max-h-[90vh] p-6 gap-4 overflow-y-auto",
+      },
+    },
+    defaultVariants: {
+      size: "lg",
+    },
+  }
+)
+
+export type DialogSize = VariantProps<typeof dialogContentVariants>["size"]
+
+// ============================================================================
+// Base Dialog Components
+// ============================================================================
 
 function Dialog({
   ...props
@@ -38,7 +94,10 @@ function DialogOverlay({
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
       className={cn(
-        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
+        "fixed inset-0 z-50",
+        "data-[state=open]:animate-in data-[state=closed]:animate-out",
+        "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+        DIALOG_TOKENS.overlay.base,
         className
       )}
       {...props}
@@ -46,33 +105,42 @@ function DialogOverlay({
   )
 }
 
+interface DialogContentProps
+  extends React.ComponentProps<typeof DialogPrimitive.Content>,
+    VariantProps<typeof dialogContentVariants> {
+  showCloseButton?: boolean
+}
+
 function DialogContent({
   className,
   children,
   showCloseButton = true,
+  size,
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Content> & {
-  showCloseButton?: boolean
-}) {
+}: DialogContentProps) {
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay />
       <DialogPrimitive.Content
         data-slot="dialog-content"
-        className={cn(
-          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg",
-          className
-        )}
+        className={cn(dialogContentVariants({ size }), className)}
         {...props}
       >
         {children}
         {showCloseButton && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
-            className="ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+            className={cn(
+              "absolute top-3 right-3 p-1.5 rounded-lg transition-all duration-150",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-keylio-teal/50",
+              "disabled:pointer-events-none",
+              DIALOG_TOKENS.close.bg,
+              DIALOG_TOKENS.close.text,
+              "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg]:size-4"
+            )}
           >
             <XIcon />
-            <span className="sr-only">Close</span>
+            <span className="sr-only">關閉</span>
           </DialogPrimitive.Close>
         )}
       </DialogPrimitive.Content>
@@ -80,22 +148,48 @@ function DialogContent({
   )
 }
 
-function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
+// ============================================================================
+// Header, Footer, Title, Description
+// ============================================================================
+
+interface DialogHeaderProps extends React.ComponentProps<"div"> {
+  /** Optional icon to display before title */
+  icon?: React.ReactNode
+}
+
+function DialogHeader({ className, icon, children, ...props }: DialogHeaderProps) {
   return (
     <div
       data-slot="dialog-header"
-      className={cn("flex flex-col gap-2 text-center sm:text-left", className)}
+      className={cn("flex flex-col gap-2", className)}
       {...props}
-    />
+    >
+      {icon && (
+        <div className="flex justify-center mb-2">
+          <div className="p-3 rounded-full bg-keylio-bg-tertiary text-keylio-teal">
+            {icon}
+          </div>
+        </div>
+      )}
+      {children}
+    </div>
   )
 }
 
-function DialogFooter({ className, ...props }: React.ComponentProps<"div">) {
+interface DialogFooterProps extends React.ComponentProps<"div"> {
+  /** Stack buttons vertically on all screen sizes */
+  stack?: boolean
+}
+
+function DialogFooter({ className, stack = false, ...props }: DialogFooterProps) {
   return (
     <div
       data-slot="dialog-footer"
       className={cn(
-        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
+        "flex gap-3 pt-2",
+        stack 
+          ? "flex-col" 
+          : "flex-col-reverse sm:flex-row sm:justify-end",
         className
       )}
       {...props}
@@ -110,7 +204,10 @@ function DialogTitle({
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn("text-lg leading-none font-semibold", className)}
+      className={cn(
+        "text-lg font-semibold leading-tight text-keylio-text-primary text-center sm:text-left",
+        className
+      )}
       {...props}
     />
   )
@@ -123,14 +220,33 @@ function DialogDescription({
   return (
     <DialogPrimitive.Description
       data-slot="dialog-description"
-      className={cn("text-muted-foreground text-sm", className)}
+      className={cn(
+        "text-sm text-keylio-text-secondary text-center sm:text-left",
+        className
+      )}
       {...props}
     />
   )
 }
 
+/** Body container for dialog content with consistent spacing */
+function DialogBody({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="dialog-body"
+      className={cn("flex flex-col gap-4", className)}
+      {...props}
+    />
+  )
+}
+
+// ============================================================================
+// Exports
+// ============================================================================
+
 export {
   Dialog,
+  DialogBody,
   DialogClose,
   DialogContent,
   DialogDescription,
@@ -140,4 +256,8 @@ export {
   DialogPortal,
   DialogTitle,
   DialogTrigger,
+  // Types
+  type DialogContentProps,
+  // Tokens for external use
+  DIALOG_TOKENS,
 }
